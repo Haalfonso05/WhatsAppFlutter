@@ -1,23 +1,31 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 import '../models/inventory_item.dart';
-import '../services/storage_service.dart';
-
-const _uuid = Uuid();
+import '../services/api_service.dart';
 
 class InventoryNotifier extends Notifier<List<InventoryItem>> {
   @override
-  List<InventoryItem> build() => ref.read(storageServiceProvider).getInventory();
+  List<InventoryItem> build() {
+    _load();
+    return [];
+  }
 
-  void add({
+  Future<void> _load() async {
+    try {
+      final items = await ApiService.getProducts();
+      state = items;
+    } catch (_) {}
+  }
+
+  Future<void> add({
     required String name,
     required String category,
     required int stock,
     required double price,
     required int threshold,
-  }) {
+  }) async {
+    final id = 'P-${DateTime.now().millisecondsSinceEpoch}';
     final item = InventoryItem(
-      id: _uuid.v4(),
+      id: id,
       name: name,
       category: category,
       stock: stock,
@@ -25,31 +33,36 @@ class InventoryNotifier extends Notifier<List<InventoryItem>> {
       threshold: threshold,
       createdAt: DateTime.now().toIso8601String(),
     );
-    final updated = [...state, item];
-    state = updated;
-    ref.read(storageServiceProvider).saveInventory(updated);
+    final created = await ApiService.createProduct(item);
+    state = [...state, created];
   }
 
-  void update(String id, {
+  Future<void> update(String id, {
     required String name,
     required String category,
     required int stock,
     required double price,
     required int threshold,
-  }) {
-    final updated = state.map((i) {
-      if (i.id != id) return i;
-      return i.copyWith(name: name, category: category, stock: stock, price: price, threshold: threshold);
-    }).toList();
-    state = updated;
-    ref.read(storageServiceProvider).saveInventory(updated);
+  }) async {
+    final item = InventoryItem(
+      id: id,
+      name: name,
+      category: category,
+      stock: stock,
+      price: price,
+      threshold: threshold,
+      createdAt: '',
+    );
+    final updated = await ApiService.updateProduct(item);
+    state = state.map((i) => i.id == id ? updated : i).toList();
   }
 
-  void remove(String id) {
-    final updated = state.where((i) => i.id != id).toList();
-    state = updated;
-    ref.read(storageServiceProvider).saveInventory(updated);
+  Future<void> remove(String id) async {
+    await ApiService.deleteProduct(id);
+    state = state.where((i) => i.id != id).toList();
   }
+
+  Future<void> reload() async => _load();
 }
 
 final inventoryProvider = NotifierProvider<InventoryNotifier, List<InventoryItem>>(

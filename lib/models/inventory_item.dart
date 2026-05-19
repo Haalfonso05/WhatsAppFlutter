@@ -37,22 +37,22 @@ class InventoryItem {
       );
 
   factory InventoryItem.fromJson(Map<String, dynamic> j) => InventoryItem(
-    id: j['id'] as String,
+    id: (j['id_product'] ?? j['id'] ?? '') as String,
     name: j['name'] as String,
-    category: (j['category'] as String?) ?? '',
-    stock: (j['stock'] as num).toInt(),
-    price: (j['price'] as num).toDouble(),
+    category: (j['product_type_id'] ?? j['category'] ?? '') as String,
+    stock: num.parse((j['current_stock'] ?? j['stock'] ?? '0').toString()).toInt(),
+    price: num.parse((j['reference_price'] ?? j['price'] ?? '0').toString()).toDouble(),
     threshold: (j['threshold'] as num?)?.toInt() ?? 5,
-    createdAt: j['createdAt'] as String,
+    createdAt: (j['createdAt'] as String?) ?? '',
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
+    'id_product': id,
     'name': name,
-    'category': category,
-    'stock': stock,
-    'price': price,
-    'threshold': threshold,
-    'createdAt': createdAt,
+    'description': name,
+    'reference_price': price,
+    'current_stock': stock,
+    'available': 'Y',
+    'product_type_id': category,
   };
 }

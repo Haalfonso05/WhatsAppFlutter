@@ -415,22 +415,24 @@ class _ClientDialog extends ConsumerStatefulWidget {
 
 class _ClientDialogState extends ConsumerState<_ClientDialog> {
   final _formKey = GlobalKey<FormState>();
+  final _docCtrl = TextEditingController();
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
-  final _emailCtrl = TextEditingController();
 
   @override
   void dispose() {
-    _nameCtrl.dispose(); _phoneCtrl.dispose(); _emailCtrl.dispose();
+    _docCtrl.dispose(); _nameCtrl.dispose();
+    _phoneCtrl.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
     ref.read(clientsProvider.notifier).add(
+      id: _docCtrl.text.trim(),
       name: _nameCtrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
+      email: '',
     );
     Navigator.pop(context);
   }
@@ -446,6 +448,11 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              TextFormField(controller: _docCtrl,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(labelText: 'Documento (cedula)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
+              const SizedBox(height: 12),
               TextFormField(controller: _nameCtrl,
                 textCapitalization: TextCapitalization.words,
                 decoration: const InputDecoration(labelText: 'Nombre completo'),
@@ -454,10 +461,6 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
               TextFormField(controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Telefono')),
-              const SizedBox(height: 12),
-              TextFormField(controller: _emailCtrl,
-                keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Correo electronico')),
             ],
           ),
         ),
@@ -526,7 +529,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
               const SizedBox(height: 12),
               TextFormField(controller: _amountCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: const InputDecoration(labelText: 'Monto (MXN)'),
+                decoration: const InputDecoration(labelText: 'Monto (COP)'),
                 validator: (v) => double.tryParse(v ?? '') == null ? 'Invalido' : null),
               const SizedBox(height: 12),
               TextFormField(controller: _descCtrl,

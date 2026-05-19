@@ -25,20 +25,20 @@ class Debt {
   );
 
   factory Debt.fromJson(Map<String, dynamic> j) => Debt(
-    id: j['id'] as String,
-    clientId: j['clientId'] as String,
-    amount: (j['amount'] as num).toDouble(),
+    id: (j['id'] ?? '').toString(),
+    clientId: (j['customer_document'] ?? j['clientId'] ?? '') as String,
+    amount: (j['value'] ?? j['amount'] ?? 0 as num).toDouble(),
     description: (j['description'] as String?) ?? '',
-    paid: (j['paid'] as bool?) ?? false,
-    createdAt: j['createdAt'] as String,
+    paid: j.containsKey('status')
+        ? (j['status'] == 'P')
+        : (j['paid'] as bool? ?? false),
+    createdAt: (j['creation_date'] ?? j['createdAt'] ?? '') as String,
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'clientId': clientId,
-    'amount': amount,
-    'description': description,
-    'paid': paid,
-    'createdAt': createdAt,
+    'customer_document': clientId,
+    'value': amount,
+    'status': paid ? 'P' : 'A',
+    'creation_date': createdAt,
   };
 }

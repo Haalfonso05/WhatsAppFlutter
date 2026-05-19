@@ -1,33 +1,44 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
 import '../models/client.dart';
-import '../services/storage_service.dart';
-
-const _uuid = Uuid();
+import '../services/api_service.dart';
 
 class ClientsNotifier extends Notifier<List<Client>> {
   @override
-  List<Client> build() => ref.read(storageServiceProvider).getClients();
+  List<Client> build() {
+    _load();
+    return [];
+  }
 
-  Client add({required String name, required String phone, required String email}) {
+  Future<void> _load() async {
+    try {
+      final clients = await ApiService.getClients();
+      state = clients;
+    } catch (_) {}
+  }
+
+  Future<Client> add({
+    required String id,
+    required String name,
+    required String phone,
+    required String email,
+  }) async {
     final client = Client(
-      id: _uuid.v4(),
+      id: id,
       name: name,
       phone: phone,
       email: email,
       createdAt: DateTime.now().toIso8601String(),
     );
-    final updated = [...state, client];
-    state = updated;
-    ref.read(storageServiceProvider).saveClients(updated);
-    return client;
+    final created = await ApiService.createClient(client);
+    state = [...state, created];
+    return created;
   }
 
-  void remove(String id) {
-    final updated = state.where((c) => c.id != id).toList();
-    state = updated;
-    ref.read(storageServiceProvider).saveClients(updated);
+  Future<void> remove(String id) async {
+    await ApiService.deleteClient(id);
+    state = state.where((c) => c.id != id).toList();
   }
 }
 
-final clientsProvider = NotifierProvider<ClientsNotifier, List<Client>>(ClientsNotifier.new);
+final clientsProvider =
+    NotifierProvider<ClientsNotifier, List<Client>>(ClientsNotifier.new);

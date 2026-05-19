@@ -1,47 +1,92 @@
+import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:uuid/uuid.dart';
+import 'package:http/http.dart' as http;
 import '../models/order.dart';
-import '../services/storage_service.dart';
-
-const _uuid = Uuid();
+import '../services/api_service.dart';
+import 'inventory_provider.dart';
 
 class OrdersNotifier extends Notifier<List<Order>> {
   @override
-  List<Order> build() => ref.read(storageServiceProvider).getOrders();
+  List<Order> build() {
+    _load();
+    return [];
+  }
 
-  void add({
+  Future<void> _load() async {
+    try {
+      final orders = await ApiService.getOrders();
+      state = orders;
+    } catch (_) {}
+  }
+
+  Future<void> add({
     required String clientName,
-    required String product,
-    required int quantity,
-    required double total,
+    required String customerDocument,
+    required List<Map<String, dynamic>> lines, // [{productId, productName, quantity, price}]
     required String notes,
-  }) {
+  }) async {
+    final id = 'ORD-${DateTime.now().millisecondsSinceEpoch}';
+    final today = DateTime.now().toIso8601String().substring(0, 10);
+    final total = lines.fold<double>(
+        0, (sum, l) => sum + (l['quantity'] as int) * (l['price'] as double));
+    final productNames =
+        lines.map((l) => l['productName'] as String).join(', ');
     final order = Order(
-      id: _uuid.v4(),
+      id: id,
       clientName: clientName,
-      product: product,
-      quantity: quantity,
+      customerDocument: customerDocument,
+      product: productNames,
+      quantity: lines.fold(0, (sum, l) => sum + (l['quantity'] as int)),
       total: total,
       notes: notes,
       status: 'En espera',
-      createdAt: DateTime.now().toIso8601String(),
+      createdAt: today,
     );
-    final updated = [...state, order];
-    state = updated;
-    ref.read(storageServiceProvider).saveOrders(updated);
+    final created = await ApiService.createOrder(order);
+    for (var i = 0; i < lines.length; i++) {
+      final l = lines[i];
+      await ApiService.createOrderDetail(
+        orderId: id,
+        customerDocument: customerDocument,
+        lineNumber: i + 1,
+        productId: l['productId'] as String,
+        amount: (l['quantity'] as int).toDouble(),
+        salePrice: l['price'] as double,
+      );
+    }
+    state = [...state, created];
   }
 
-  void updateStatus(String id, String status) {
-    final updated = state.map((o) => o.id == id ? o.copyWith(status: status) : o).toList();
-    state = updated;
-    ref.read(storageServiceProvider).saveOrders(updated);
+  Future<void> updateStatus(String id, String status) async {
+    await ApiService.updateOrderStatus(id, status);
+    state = state.map((o) => o.id == id ? o.copyWith(status: status) : o).toList();
+    if (status == 'Listo') {
+      await _decrementStockForOrder(id);
+    }
+  }
+
+  Future<void> _decrementStockForOrder(String orderId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://127.0.0.1:8000/orders/$orderId/details'),
+      );
+      if (response.statusCode != 200) return;
+      final List details = jsonDecode(response.body);
+      for (final d in details) {
+        final productId = d['product_id'] as String;
+        final amount = (d['amount'] as num);
+        await ApiService.adjustProductStock(productId, -amount);
+      }
+      ref.read(inventoryProvider.notifier).reload();
+    } catch (_) {}
   }
 
   void remove(String id) {
-    final updated = state.where((o) => o.id != id).toList();
-    state = updated;
-    ref.read(storageServiceProvider).saveOrders(updated);
+    state = state.where((o) => o.id != id).toList();
   }
+
+  Future<void> reload() async => _load();
 }
 
-final ordersProvider = NotifierProvider<OrdersNotifier, List<Order>>(OrdersNotifier.new);
+final ordersProvider =
+    NotifierProvider<OrdersNotifier, List<Order>>(OrdersNotifier.new);

@@ -4,6 +4,7 @@ import '../core/theme.dart';
 import '../core/utils.dart';
 import '../models/inventory_item.dart';
 import '../providers/inventory_provider.dart';
+import '../services/api_service.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/texture_card.dart';
 import '../widgets/status_badge.dart';
@@ -25,8 +26,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
     super.dispose();
   }
 
-  void _openForm({InventoryItem? editing}) {
-    showDialog(context: context, builder: (_) => _InventoryDialog(editing: editing));
+  void _openForm() {
+    showDialog(context: context, builder: (_) => const _InventoryDialog());
   }
 
   @override
@@ -59,7 +60,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                 ),
               ),
               FilledButton.icon(
-                onPressed: () => _openForm(),
+                onPressed: _openForm,
                 icon: const Icon(Icons.add, size: 18),
                 label: const Text('Agregar producto'),
                 style: FilledButton.styleFrom(
@@ -104,7 +105,6 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                   )
                 : _InventoryTable(
                     items: filtered,
-                    onEdit: (item) => _openForm(editing: item),
                     onDelete: (id) => ref.read(inventoryProvider.notifier).remove(id),
                   ),
           ),
@@ -114,14 +114,13 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   }
 }
 
-class _InventoryTable extends StatelessWidget {
-  const _InventoryTable({required this.items, required this.onEdit, required this.onDelete});
+class _InventoryTable extends ConsumerWidget {
+  const _InventoryTable({required this.items, required this.onDelete});
   final List<InventoryItem> items;
-  final void Function(InventoryItem) onEdit;
   final void Function(String) onDelete;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Column(
       children: [
         // Header
@@ -139,7 +138,7 @@ class _InventoryTable extends StatelessWidget {
               SizedBox(width: 80, child: Text('Stock', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500), textAlign: TextAlign.right)),
               SizedBox(width: 100, child: Text('Precio', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500), textAlign: TextAlign.right)),
               SizedBox(width: 90, child: Text('Estado', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500), textAlign: TextAlign.right)),
-              SizedBox(width: 72),
+              SizedBox(width: 80),
             ],
           ),
         ),
@@ -148,7 +147,7 @@ class _InventoryTable extends StatelessWidget {
           return Column(
             children: [
               if (i > 0) const Divider(height: 1, color: Color(0xFAF8FAFC)),
-              _TableRow(item: item, onEdit: () => onEdit(item), onDelete: () => onDelete(item.id)),
+              _TableRow(item: item, onDelete: () => onDelete(item.id)),
             ],
           );
         }),
@@ -157,59 +156,170 @@ class _InventoryTable extends StatelessWidget {
   }
 }
 
-class _TableRow extends StatelessWidget {
-  const _TableRow({required this.item, required this.onEdit, required this.onDelete});
+class _TableRow extends ConsumerStatefulWidget {
+  const _TableRow({required this.item, required this.onDelete});
   final InventoryItem item;
-  final VoidCallback onEdit;
   final VoidCallback onDelete;
+
+  @override
+  ConsumerState<_TableRow> createState() => _TableRowState();
+}
+
+class _TableRowState extends ConsumerState<_TableRow> {
+  bool _editing = false;
+  late final _nameCtrl  = TextEditingController(text: widget.item.name);
+  late final _stockCtrl = TextEditingController(text: widget.item.stock.toString());
+  late final _priceCtrl = TextEditingController(text: widget.item.price.toStringAsFixed(0));
+
+  @override
+  void dispose() {
+    _nameCtrl.dispose(); _stockCtrl.dispose(); _priceCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    final stock = int.tryParse(_stockCtrl.text);
+    final price = double.tryParse(_priceCtrl.text);
+    if (stock == null || price == null || _nameCtrl.text.trim().isEmpty) return;
+    await ref.read(inventoryProvider.notifier).update(
+      widget.item.id,
+      name: _nameCtrl.text.trim(),
+      category: widget.item.category,
+      stock: stock,
+      price: price,
+      threshold: widget.item.threshold,
+    );
+    setState(() => _editing = false);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 3,
-            child: Text(item.name, style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate800, fontSize: 13)),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      child: _editing ? _editRow() : _viewRow(),
+    );
+  }
+
+  Future<void> _adjustStock(int delta) async {
+    await ApiService.adjustProductStock(widget.item.id, delta);
+    ref.read(inventoryProvider.notifier).reload();
+  }
+
+  Widget _viewRow() {
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: Text(widget.item.name,
+              style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate800, fontSize: 13)),
+        ),
+        Expanded(
+          flex: 2,
+          child: Text(
+            widget.item.category.isEmpty ? '—' : widget.item.category,
+            style: const TextStyle(fontSize: 13, color: kSlate500),
           ),
-          Expanded(
-            flex: 2,
-            child: Text(
-              item.category.isEmpty ? '—' : item.category,
-              style: const TextStyle(fontSize: 13, color: kSlate500),
-            ),
+        ),
+        SizedBox(
+          width: 80,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _StockBtn(icon: Icons.remove, onTap: () => _adjustStock(-1)),
+              const SizedBox(width: 4),
+              Text('${widget.item.stock}',
+                  style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate700, fontSize: 13)),
+              const SizedBox(width: 4),
+              _StockBtn(icon: Icons.add, onTap: () => _adjustStock(1)),
+            ],
           ),
-          SizedBox(
-            width: 80,
-            child: Text('${item.stock}', textAlign: TextAlign.right,
-                style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate700, fontSize: 13)),
+        ),
+        SizedBox(
+          width: 100,
+          child: Text(formatCurrency(widget.item.price), textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 13, color: kSlate700)),
+        ),
+        SizedBox(
+          width: 90,
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: StatusBadge(widget.item.isLowStock ? 'Stock bajo' : 'OK'),
           ),
-          SizedBox(
-            width: 100,
-            child: Text(formatCurrency(item.price), textAlign: TextAlign.right,
-                style: const TextStyle(fontSize: 13, color: kSlate700)),
+        ),
+        SizedBox(
+          width: 80,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _IconBtn(icon: Icons.edit_outlined, color: kPrimary,
+                  onTap: () => setState(() => _editing = true)),
+              const SizedBox(width: 2),
+              _IconBtn(icon: Icons.delete_outline, color: kRed, onTap: widget.onDelete),
+            ],
           ),
-          SizedBox(
-            width: 90,
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: StatusBadge(item.isLowStock ? 'Stock bajo' : 'OK'),
-            ),
+        ),
+      ],
+    );
+  }
+
+  Widget _editRow() {
+    const inputDec = InputDecoration(
+      isDense: true,
+      contentPadding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      border: OutlineInputBorder(),
+    );
+    return Row(
+      children: [
+        Expanded(
+          flex: 3,
+          child: TextField(controller: _nameCtrl,
+              style: const TextStyle(fontSize: 13),
+              decoration: inputDec),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          flex: 2,
+          child: Text(
+            widget.item.category.isEmpty ? '—' : widget.item.category,
+            style: const TextStyle(fontSize: 13, color: kSlate500),
           ),
-          SizedBox(
-            width: 72,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _IconBtn(icon: Icons.edit_outlined, color: kPrimary, onTap: onEdit),
-                const SizedBox(width: 2),
-                _IconBtn(icon: Icons.delete_outline, color: kRed, onTap: onDelete),
-              ],
-            ),
+        ),
+        SizedBox(
+          width: 80,
+          child: TextField(controller: _stockCtrl,
+              keyboardType: TextInputType.number,
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 13),
+              decoration: inputDec),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 92,
+          child: TextField(controller: _priceCtrl,
+              keyboardType: const TextInputType.numberWithOptions(decimal: true),
+              textAlign: TextAlign.right,
+              style: const TextStyle(fontSize: 13),
+              decoration: inputDec),
+        ),
+        const SizedBox(width: 8),
+        SizedBox(
+          width: 80,
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              _IconBtn(icon: Icons.check, color: kPrimary, onTap: _save),
+              const SizedBox(width: 2),
+              _IconBtn(icon: Icons.close, color: kSlate400,
+                  onTap: () {
+                    _nameCtrl.text = widget.item.name;
+                    _stockCtrl.text = widget.item.stock.toString();
+                    _priceCtrl.text = widget.item.price.toStringAsFixed(0);
+                    setState(() => _editing = false);
+                  }),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -249,49 +359,71 @@ class _IconBtnState extends State<_IconBtn> {
   }
 }
 
+class _StockBtn extends StatelessWidget {
+  const _StockBtn({required this.icon, required this.onTap});
+  final IconData icon;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 20,
+        height: 20,
+        decoration: BoxDecoration(
+          color: kSlate100,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Icon(icon, size: 13, color: kSlate500),
+      ),
+    );
+  }
+}
+
 class _InventoryDialog extends ConsumerStatefulWidget {
-  const _InventoryDialog({this.editing});
-  final InventoryItem? editing;
+  const _InventoryDialog();
 
   @override
   ConsumerState<_InventoryDialog> createState() => _InventoryDialogState();
 }
 
 class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
-  final _formKey = GlobalKey<FormState>();
-  late final _nameCtrl = TextEditingController(text: widget.editing?.name ?? '');
-  late final _catCtrl = TextEditingController(text: widget.editing?.category ?? '');
-  late final _stockCtrl = TextEditingController(text: widget.editing?.stock.toString() ?? '');
-  late final _priceCtrl = TextEditingController(text: widget.editing?.price.toString() ?? '');
-  late final _threshCtrl = TextEditingController(text: (widget.editing?.threshold ?? 5).toString());
+  final _formKey   = GlobalKey<FormState>();
+  final _nameCtrl  = TextEditingController();
+  final _stockCtrl = TextEditingController();
+  final _priceCtrl = TextEditingController();
+  final _threshCtrl = TextEditingController(text: '5');
+  String? _selectedType;
+  List<Map<String, String>> _types = [];
+
+  @override
+  void initState() {
+    super.initState();
+    ApiService.getProductTypes().then((t) => setState(() => _types = t));
+  }
 
   @override
   void dispose() {
-    _nameCtrl.dispose(); _catCtrl.dispose(); _stockCtrl.dispose();
+    _nameCtrl.dispose(); _stockCtrl.dispose();
     _priceCtrl.dispose(); _threshCtrl.dispose();
     super.dispose();
   }
 
   void _submit() {
     if (!_formKey.currentState!.validate()) return;
-    final n = ref.read(inventoryProvider.notifier);
-    if (widget.editing != null) {
-      n.update(widget.editing!.id,
-        name: _nameCtrl.text.trim(), category: _catCtrl.text.trim(),
-        stock: int.parse(_stockCtrl.text), price: double.parse(_priceCtrl.text),
-        threshold: int.parse(_threshCtrl.text));
-    } else {
-      n.add(name: _nameCtrl.text.trim(), category: _catCtrl.text.trim(),
-        stock: int.parse(_stockCtrl.text), price: double.parse(_priceCtrl.text),
-        threshold: int.parse(_threshCtrl.text));
-    }
+    if (_selectedType == null) return;
+    ref.read(inventoryProvider.notifier).add(
+      name: _nameCtrl.text.trim(), category: _selectedType!,
+      stock: int.parse(_stockCtrl.text), price: double.parse(_priceCtrl.text),
+      threshold: int.parse(_threshCtrl.text));
     Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(widget.editing != null ? 'Editar producto' : 'Nuevo producto'),
+      title: const Text('Nuevo producto'),
       content: SizedBox(
         width: 380,
         child: Form(
@@ -303,8 +435,16 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
                 decoration: const InputDecoration(labelText: 'Nombre del producto'),
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
               const SizedBox(height: 12),
-              TextFormField(controller: _catCtrl,
-                decoration: const InputDecoration(labelText: 'Categoria')),
+              DropdownButtonFormField<String>(
+                value: _selectedType,
+                decoration: const InputDecoration(labelText: 'Categoria'),
+                onChanged: (v) => setState(() => _selectedType = v),
+                validator: (v) => v == null ? 'Selecciona una categoria' : null,
+                items: _types.map((t) => DropdownMenuItem(
+                  value: t['id'],
+                  child: Text('${t['name']} (${t['id']})'),
+                )).toList(),
+              ),
               const SizedBox(height: 12),
               Row(children: [
                 Expanded(child: TextFormField(controller: _stockCtrl,
@@ -314,7 +454,7 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
                 const SizedBox(width: 12),
                 Expanded(child: TextFormField(controller: _priceCtrl,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  decoration: const InputDecoration(labelText: 'Precio (MXN)'),
+                  decoration: const InputDecoration(labelText: 'Precio (COP)'),
                   validator: (v) => double.tryParse(v ?? '') == null ? 'Invalido' : null)),
               ]),
               const SizedBox(height: 12),
@@ -331,7 +471,7 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
         FilledButton(
           onPressed: _submit,
           style: FilledButton.styleFrom(backgroundColor: kPrimary),
-          child: Text(widget.editing != null ? 'Guardar' : 'Agregar'),
+          child: const Text('Agregar'),
         ),
       ],
     );

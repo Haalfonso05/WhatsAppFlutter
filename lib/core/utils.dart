@@ -1,6 +1,6 @@
 import 'package:intl/intl.dart';
 
-final _currency = NumberFormat.currency(locale: 'es_MX', symbol: r'$', decimalDigits: 2);
+final _currency = NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0);
 final _date = DateFormat('dd/MM/yyyy');
 
 String formatCurrency(double amount) => _currency.format(amount);

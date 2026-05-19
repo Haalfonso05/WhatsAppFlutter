@@ -1,8 +1,9 @@
-const orderStatuses = ['En espera', 'Listo', 'Enviado'];
+const orderStatuses = ['En espera', 'Enviado', 'Listo'];
 
 class Order {
   final String id;
   final String clientName;
+  final String customerDocument;
   final String product;
   final int quantity;
   final double total;
@@ -13,6 +14,7 @@ class Order {
   const Order({
     required this.id,
     required this.clientName,
+    this.customerDocument = '',
     required this.product,
     required this.quantity,
     required this.total,
@@ -24,6 +26,7 @@ class Order {
   Order copyWith({String? status}) => Order(
     id: id,
     clientName: clientName,
+    customerDocument: customerDocument,
     product: product,
     quantity: quantity,
     total: total,
@@ -32,25 +35,32 @@ class Order {
     createdAt: createdAt,
   );
 
+  static String _mapStatus(String? s) {
+    switch (s) {
+      case 'E': return 'Enviado';
+      case 'D': return 'Listo';
+      default:  return 'En espera';
+    }
+  }
+
   factory Order.fromJson(Map<String, dynamic> j) => Order(
-    id: j['id'] as String,
-    clientName: j['clientName'] as String,
-    product: j['product'] as String,
-    quantity: (j['quantity'] as num).toInt(),
-    total: (j['total'] as num).toDouble(),
-    notes: (j['notes'] as String?) ?? '',
-    status: (j['status'] as String?) ?? 'En espera',
-    createdAt: j['createdAt'] as String,
+    id: (j['id_order'] ?? j['id'] ?? '') as String,
+    clientName: (j['client_name'] ?? j['clientName'] ?? '') as String,
+    customerDocument: (j['customer_document'] ?? '') as String,
+    product: (j['product_name'] ?? j['product'] ?? '') as String,
+    quantity: num.parse((j['quantity'] ?? '0').toString()).toInt(),
+    total: num.parse((j['total'] ?? '0').toString()).toDouble(),
+    notes: (j['observation'] ?? j['notes'] ?? '') as String,
+    status: _mapStatus(j['delivery_status'] as String?),
+    createdAt: (j['application_date'] ?? j['createdAt'] ?? '') as String,
   );
 
   Map<String, dynamic> toJson() => {
-    'id': id,
-    'clientName': clientName,
-    'product': product,
-    'quantity': quantity,
+    'id_order': id,
+    'customer_document': customerDocument,
+    'application_date': createdAt,
+    'shipment_date': createdAt,
     'total': total,
-    'notes': notes,
-    'status': status,
-    'createdAt': createdAt,
+    'payment_method_id': 'EF',
   };
 }
