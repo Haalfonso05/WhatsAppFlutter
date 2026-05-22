@@ -594,8 +594,8 @@ class _IconDelBtnState extends State<_IconDelBtn> {
 
 class _ProductLine {
   String? productId;
-  int quantity;
-  _ProductLine({this.productId, this.quantity = 1});
+  int quantity = 1;
+  _ProductLine();
 }
 
 class _OrderDialog extends ConsumerStatefulWidget {
@@ -713,7 +713,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
 
             // Cliente
             DropdownButtonFormField<String>(
-              value: _selectedClientId,
+              initialValue: _selectedClientId,
               decoration: const InputDecoration(labelText: 'Cliente'),
               onChanged: (v) => setState(() => _selectedClientId = v),
               items: clients
@@ -762,7 +762,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
                       children: [
                         Expanded(
                           child: DropdownButtonFormField<String>(
-                            value: line.productId,
+                            initialValue: line.productId,
                             decoration: InputDecoration(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                               errorText: outOfStock ? 'Sin stock' : null,
@@ -837,7 +837,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
                       Padding(
                         padding: const EdgeInsets.only(top: 2, left: 4),
                         child: Text(
-                          'Solo hay ${selectedItem!.stock} en stock',
+                          'Solo hay ${selectedItem.stock} en stock',
                           style: const TextStyle(fontSize: 11, color: kRed),
                         ),
                       ),
