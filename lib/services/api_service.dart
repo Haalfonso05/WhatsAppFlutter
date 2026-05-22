@@ -30,6 +30,18 @@ class ApiService {
     throw Exception('Error al crear cliente: ${response.body}');
   }
 
+  static Future<Client> updateClient(Client client) async {
+    final response = await http.put(
+      Uri.parse('$_baseUrl/customers/${client.id}'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode(client.toJson()),
+    );
+    if (response.statusCode == 200) {
+      return Client.fromJson(jsonDecode(response.body));
+    }
+    throw Exception('Error al actualizar cliente: ${response.body}');
+  }
+
   static Future<void> deleteClient(String document) async {
     final response = await http.delete(Uri.parse('$_baseUrl/customers/$document'));
     if (response.statusCode != 200) {

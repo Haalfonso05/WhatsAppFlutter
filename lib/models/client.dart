@@ -5,6 +5,7 @@ class Client {
   final String lastName1;
   final String lastName2;
   final String phone;
+  final String address;
   final String email;
   final String createdAt;
 
@@ -15,6 +16,7 @@ class Client {
     required this.lastName1,
     this.lastName2 = '',
     required this.phone,
+    this.address = '',
     this.email = '',
     required this.createdAt,
   });
@@ -33,6 +35,7 @@ class Client {
     lastName1: (j['last_name_1'] as String? ?? ''),
     lastName2: (j['last_name_2'] as String? ?? ''),
     phone: (j['phone_number'] ?? j['phone'] ?? '') as String,
+    address: (j['address'] as String?) ?? '',
     email: (j['email'] as String?) ?? '',
     createdAt: (j['createdAt'] as String?) ?? '',
   );
@@ -44,5 +47,6 @@ class Client {
     'last_name_1': lastName1,
     if (lastName2.isNotEmpty) 'last_name_2': lastName2,
     'phone_number': phone,
+    if (address.isNotEmpty) 'address': address,
   };
 }

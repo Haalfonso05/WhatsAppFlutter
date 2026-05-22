@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
+import '../models/client.dart';
 import '../providers/clients_provider.dart';
 import '../providers/debts_provider.dart';
 import '../widgets/gradient_text.dart';
@@ -207,6 +208,11 @@ class _ClientsTab extends ConsumerWidget {
                               ),
                             ),
                             const Spacer(),
+                            _EditBtn(onTap: () => showDialog(
+                              context: context,
+                              builder: (_) => _EditClientDialog(client: client),
+                            )),
+                            const SizedBox(width: 4),
                             _DelBtn(onTap: () => ref.read(clientsProvider.notifier).remove(client.id)),
                           ],
                         ),
@@ -372,6 +378,39 @@ class _DebtsTab extends ConsumerWidget {
   }
 }
 
+class _EditBtn extends StatefulWidget {
+  const _EditBtn({required this.onTap});
+  final VoidCallback onTap;
+
+  @override
+  State<_EditBtn> createState() => _EditBtnState();
+}
+
+class _EditBtnState extends State<_EditBtn> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: GestureDetector(
+        onTap: widget.onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 120),
+          width: 30,
+          height: 30,
+          decoration: BoxDecoration(
+            color: _hovered ? kPrimary.withValues(alpha: 0.1) : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(Icons.edit_outlined, size: 16, color: _hovered ? kPrimary : kSlate300),
+        ),
+      ),
+    );
+  }
+}
+
 class _DelBtn extends StatefulWidget {
   const _DelBtn({required this.onTap});
   final VoidCallback onTap;
@@ -420,6 +459,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
   final _lastName1Ctrl = TextEditingController();
   final _lastName2Ctrl = TextEditingController();
   final _phoneCtrl    = TextEditingController();
+  final _addressCtrl  = TextEditingController();
 
   @override
   void dispose() {
@@ -429,6 +469,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     _lastName1Ctrl.dispose();
     _lastName2Ctrl.dispose();
     _phoneCtrl.dispose();
+    _addressCtrl.dispose();
     super.dispose();
   }
 
@@ -441,6 +482,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
       lastName1: _lastName1Ctrl.text.trim(),
       lastName2: _lastName2Ctrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
     );
     Navigator.pop(context);
   }
@@ -505,6 +547,12 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
                 controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
                 decoration: const InputDecoration(labelText: 'Telefono'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressCtrl,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Direccion'),
               ),
             ],
           ),
@@ -589,6 +637,133 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
           onPressed: _submit,
           style: FilledButton.styleFrom(backgroundColor: kPrimary),
           child: const Text('Registrar deuda'),
+        ),
+      ],
+    );
+  }
+}
+
+class _EditClientDialog extends ConsumerStatefulWidget {
+  const _EditClientDialog({required this.client});
+  final Client client;
+
+  @override
+  ConsumerState<_EditClientDialog> createState() => _EditClientDialogState();
+}
+
+class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
+  final _formKey = GlobalKey<FormState>();
+  late final _name1Ctrl    = TextEditingController(text: widget.client.name1);
+  late final _name2Ctrl    = TextEditingController(text: widget.client.name2);
+  late final _lastName1Ctrl = TextEditingController(text: widget.client.lastName1);
+  late final _lastName2Ctrl = TextEditingController(text: widget.client.lastName2);
+  late final _phoneCtrl    = TextEditingController(text: widget.client.phone);
+  late final _addressCtrl  = TextEditingController(text: widget.client.address);
+
+  @override
+  void dispose() {
+    _name1Ctrl.dispose();
+    _name2Ctrl.dispose();
+    _lastName1Ctrl.dispose();
+    _lastName2Ctrl.dispose();
+    _phoneCtrl.dispose();
+    _addressCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    if (!_formKey.currentState!.validate()) return;
+    final updated = Client(
+      id: widget.client.id,
+      name1: _name1Ctrl.text.trim(),
+      name2: _name2Ctrl.text.trim(),
+      lastName1: _lastName1Ctrl.text.trim(),
+      lastName2: _lastName2Ctrl.text.trim(),
+      phone: _phoneCtrl.text.trim(),
+      address: _addressCtrl.text.trim(),
+      createdAt: widget.client.createdAt,
+    );
+    ref.read(clientsProvider.notifier).update(updated);
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Text('Editar cliente · ${widget.client.id}'),
+      content: SizedBox(
+        width: 400,
+        child: Form(
+          key: _formKey,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Documento solo lectura
+              TextFormField(
+                initialValue: widget.client.id,
+                enabled: false,
+                decoration: const InputDecoration(labelText: 'Documento (no editable)'),
+              ),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _name1Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Primer nombre'),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _name2Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Segundo nombre'),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastName1Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Primer apellido'),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastName2Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Segundo apellido'),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneCtrl,
+                keyboardType: TextInputType.phone,
+                decoration: const InputDecoration(labelText: 'Telefono'),
+              ),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _addressCtrl,
+                textCapitalization: TextCapitalization.sentences,
+                decoration: const InputDecoration(labelText: 'Direccion (opcional)'),
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+        FilledButton(
+          onPressed: _submit,
+          style: FilledButton.styleFrom(backgroundColor: kPrimary),
+          child: const Text('Guardar cambios'),
         ),
       ],
     );

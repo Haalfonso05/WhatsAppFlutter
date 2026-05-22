@@ -23,6 +23,7 @@ class ClientsNotifier extends Notifier<List<Client>> {
     required String lastName1,
     String lastName2 = '',
     required String phone,
+    String address = '',
   }) async {
     final client = Client(
       id: id,
@@ -31,11 +32,17 @@ class ClientsNotifier extends Notifier<List<Client>> {
       lastName1: lastName1,
       lastName2: lastName2,
       phone: phone,
+      address: address,
       createdAt: DateTime.now().toIso8601String(),
     );
     final created = await ApiService.createClient(client);
     state = [...state, created];
     return created;
+  }
+
+  Future<void> update(Client client) async {
+    final updated = await ApiService.updateClient(client);
+    state = state.map((c) => c.id == updated.id ? updated : c).toList();
   }
 
   Future<void> remove(String id) async {
