@@ -152,7 +152,7 @@ class _ClientsTab extends ConsumerWidget {
     final q = search.toLowerCase();
     final filtered = q.isEmpty
         ? clients
-        : clients.where((c) => c.name.toLowerCase().contains(q) || c.email.toLowerCase().contains(q)).toList();
+        : clients.where((c) => c.fullName.toLowerCase().contains(q) || c.id.contains(q)).toList();
 
     if (filtered.isEmpty) {
       return Container(
@@ -202,7 +202,7 @@ class _ClientsTab extends ConsumerWidget {
                               radius: 20,
                               backgroundColor: kPrimary.withValues(alpha: 0.12),
                               child: Text(
-                                client.name[0].toUpperCase(),
+                                client.name1.isNotEmpty ? client.name1[0].toUpperCase() : '?',
                                 style: const TextStyle(color: kPrimary, fontWeight: FontWeight.bold, fontSize: 15),
                               ),
                             ),
@@ -211,10 +211,9 @@ class _ClientsTab extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 12),
-                        Text(client.name,
+                        Text(client.fullName,
                             style: const TextStyle(fontWeight: FontWeight.w600, color: kSlate900, fontSize: 15)),
-                        if (client.email.isNotEmpty)
-                          Text(client.email, style: const TextStyle(fontSize: 12, color: kSlate500)),
+                        Text('Doc: ${client.id}', style: const TextStyle(fontSize: 12, color: kSlate500)),
                         if (client.phone.isNotEmpty)
                           Text(client.phone, style: const TextStyle(fontSize: 12, color: kSlate500)),
                         if (pending > 0)
@@ -262,7 +261,7 @@ class _DebtsTab extends ConsumerWidget {
         ? debts
         : debts.where((d) {
             final c = clients.where((c) => c.id == d.clientId).firstOrNull;
-            return (c?.name ?? '').toLowerCase().contains(q) || d.description.toLowerCase().contains(q);
+            return (c?.fullName ?? '').toLowerCase().contains(q) || d.description.toLowerCase().contains(q);
           }).toList();
 
     if (filtered.isEmpty) {
@@ -333,7 +332,7 @@ class _DebtsTab extends ConsumerWidget {
                         const SizedBox(width: 12),
                         Expanded(
                           flex: 2,
-                          child: Text(client?.name ?? '—',
+                          child: Text(client?.fullName ?? '—',
                               style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate800, fontSize: 13)),
                         ),
                         Expanded(
@@ -415,13 +414,20 @@ class _ClientDialog extends ConsumerStatefulWidget {
 
 class _ClientDialogState extends ConsumerState<_ClientDialog> {
   final _formKey = GlobalKey<FormState>();
-  final _docCtrl = TextEditingController();
-  final _nameCtrl = TextEditingController();
-  final _phoneCtrl = TextEditingController();
+  final _docCtrl      = TextEditingController();
+  final _name1Ctrl    = TextEditingController();
+  final _name2Ctrl    = TextEditingController();
+  final _lastName1Ctrl = TextEditingController();
+  final _lastName2Ctrl = TextEditingController();
+  final _phoneCtrl    = TextEditingController();
 
   @override
   void dispose() {
-    _docCtrl.dispose(); _nameCtrl.dispose();
+    _docCtrl.dispose();
+    _name1Ctrl.dispose();
+    _name2Ctrl.dispose();
+    _lastName1Ctrl.dispose();
+    _lastName2Ctrl.dispose();
     _phoneCtrl.dispose();
     super.dispose();
   }
@@ -430,9 +436,11 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     if (!_formKey.currentState!.validate()) return;
     ref.read(clientsProvider.notifier).add(
       id: _docCtrl.text.trim(),
-      name: _nameCtrl.text.trim(),
+      name1: _name1Ctrl.text.trim(),
+      name2: _name2Ctrl.text.trim(),
+      lastName1: _lastName1Ctrl.text.trim(),
+      lastName2: _lastName2Ctrl.text.trim(),
       phone: _phoneCtrl.text.trim(),
-      email: '',
     );
     Navigator.pop(context);
   }
@@ -442,25 +450,62 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     return AlertDialog(
       title: const Text('Nuevo cliente'),
       content: SizedBox(
-        width: 360,
+        width: 400,
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(controller: _docCtrl,
+              TextFormField(
+                controller: _docCtrl,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Documento (cedula)'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
+                decoration: const InputDecoration(labelText: 'Documento (CC / CE)'),
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+              ),
               const SizedBox(height: 12),
-              TextFormField(controller: _nameCtrl,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Nombre completo'),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _name1Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Primer nombre'),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _name2Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Segundo nombre'),
+                  ),
+                ),
+              ]),
               const SizedBox(height: 12),
-              TextFormField(controller: _phoneCtrl,
+              Row(children: [
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastName1Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Primer apellido'),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextFormField(
+                    controller: _lastName2Ctrl,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(labelText: 'Segundo apellido'),
+                  ),
+                ),
+              ]),
+              const SizedBox(height: 12),
+              TextFormField(
+                controller: _phoneCtrl,
                 keyboardType: TextInputType.phone,
-                decoration: const InputDecoration(labelText: 'Telefono')),
+                decoration: const InputDecoration(labelText: 'Telefono'),
+              ),
             ],
           ),
         ),
@@ -524,7 +569,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
                 decoration: const InputDecoration(labelText: 'Cliente'),
                 onChanged: (v) => setState(() => _selectedClientId = v),
                 validator: (v) => v == null ? 'Selecciona un cliente' : null,
-                items: clients.map((c) => DropdownMenuItem(value: c.id, child: Text(c.name))).toList(),
+                items: clients.map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullName))).toList(),
               ),
               const SizedBox(height: 12),
               TextFormField(controller: _amountCtrl,

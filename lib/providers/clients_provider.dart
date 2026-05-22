@@ -18,15 +18,19 @@ class ClientsNotifier extends Notifier<List<Client>> {
 
   Future<Client> add({
     required String id,
-    required String name,
+    required String name1,
+    String name2 = '',
+    required String lastName1,
+    String lastName2 = '',
     required String phone,
-    required String email,
   }) async {
     final client = Client(
       id: id,
-      name: name,
+      name1: name1,
+      name2: name2,
+      lastName1: lastName1,
+      lastName2: lastName2,
       phone: phone,
-      email: email,
       createdAt: DateTime.now().toIso8601String(),
     );
     final created = await ApiService.createClient(client);

@@ -663,7 +663,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
       }).toList();
 
       await ref.read(ordersProvider.notifier).add(
-        clientName: client.name,
+        clientName: client.fullName,
         customerDocument: client.id,
         lines: lines,
         notes: _notesCtrl.text.trim(),
@@ -717,7 +717,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
               decoration: const InputDecoration(labelText: 'Cliente'),
               onChanged: (v) => setState(() => _selectedClientId = v),
               items: clients
-                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.name)))
+                  .map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullName)))
                   .toList(),
             ),
             const SizedBox(height: 20),
