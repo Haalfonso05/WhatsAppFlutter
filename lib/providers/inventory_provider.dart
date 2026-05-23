@@ -23,7 +23,11 @@ class InventoryNotifier extends Notifier<List<InventoryItem>> {
     required double price,
     required int threshold,
   }) async {
-    final id = 'P-${DateTime.now().millisecondsSinceEpoch}';
+    final nums = state
+        .map((i) => int.tryParse(i.id.replaceAll(RegExp(r'[^0-9]'), '')) ?? 0)
+        .toList();
+    final next = (nums.isEmpty ? 0 : nums.reduce((a, b) => a > b ? a : b)) + 1;
+    final id = 'P${next.toString().padLeft(4, '0')}';
     final item = InventoryItem(
       id: id,
       name: name,

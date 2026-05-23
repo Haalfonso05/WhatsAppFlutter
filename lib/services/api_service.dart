@@ -11,7 +11,7 @@ class ApiService {
   // Customers
   static Future<List<Client>> getClients() async {
     final response = await http.get(Uri.parse('$_baseUrl/customers/'));
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => Client.fromJson(e)).toList();
     }
@@ -24,7 +24,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(client.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return Client.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al crear cliente: ${response.body}');
@@ -36,7 +36,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(client.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return Client.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al actualizar cliente: ${response.body}');
@@ -49,10 +49,9 @@ class ApiService {
     }
   }
 
-  // Products
   static Future<List<Map<String, String>>> getProductTypes() async {
     final response = await http.get(Uri.parse('$_baseUrl/products/types'));
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => {'id': e['id'] as String, 'name': e['name'] as String}).toList();
     }
@@ -61,7 +60,7 @@ class ApiService {
 
   static Future<List<InventoryItem>> getProducts() async {
     final response = await http.get(Uri.parse('$_baseUrl/products/'));
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => InventoryItem.fromJson(e)).toList();
     }
@@ -74,7 +73,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(item.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return InventoryItem.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al crear producto: ${response.body}');
@@ -86,7 +85,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(item.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return InventoryItem.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al actualizar producto: ${response.body}');
@@ -113,7 +112,7 @@ class ApiService {
   // Orders
   static Future<List<Order>> getOrders() async {
     final response = await http.get(Uri.parse('$_baseUrl/orders/'));
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => Order.fromJson(e)).toList();
     }
@@ -126,7 +125,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(order.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return Order.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al crear orden: ${response.body}');
@@ -173,7 +172,7 @@ class ApiService {
   // Debts (credit table)
   static Future<List<Debt>> getDebts() async {
     final response = await http.get(Uri.parse('$_baseUrl/credits/'));
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => Debt.fromJson(e)).toList();
     }
@@ -186,7 +185,7 @@ class ApiService {
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode(debt.toJson()),
     );
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return Debt.fromJson(jsonDecode(response.body));
     }
     throw Exception('Error al crear deuda: ${response.body}');

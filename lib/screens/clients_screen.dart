@@ -212,8 +212,6 @@ class _ClientsTab extends ConsumerWidget {
                               context: context,
                               builder: (_) => _EditClientDialog(client: client),
                             )),
-                            const SizedBox(width: 4),
-                            _DelBtn(onTap: () => ref.read(clientsProvider.notifier).remove(client.id)),
                           ],
                         ),
                         const SizedBox(height: 12),

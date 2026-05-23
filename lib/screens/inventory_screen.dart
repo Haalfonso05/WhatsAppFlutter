@@ -253,8 +253,6 @@ class _TableRowState extends ConsumerState<_TableRow> {
             children: [
               _IconBtn(icon: Icons.edit_outlined, color: kPrimary,
                   onTap: () => setState(() => _editing = true)),
-              const SizedBox(width: 2),
-              _IconBtn(icon: Icons.delete_outline, color: kRed, onTap: widget.onDelete),
             ],
           ),
         ),
@@ -436,7 +434,7 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
                 validator: (v) => (v == null || v.trim().isEmpty) ? 'Requerido' : null),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
-                value: _selectedType,
+                initialValue: _selectedType,
                 decoration: const InputDecoration(labelText: 'Categoria'),
                 onChanged: (v) => setState(() => _selectedType = v),
                 validator: (v) => v == null ? 'Selecciona una categoria' : null,
