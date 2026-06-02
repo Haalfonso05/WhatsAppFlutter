@@ -38,7 +38,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final clients = ref.watch(clientsProvider);
+    final paged = ref.watch(clientsPagedProvider);
     final debts = ref.watch(debtsProvider);
     final totalPending = debts.where((d) => !d.paid).fold(0.0, (s, d) => s + d.amount);
 
@@ -62,7 +62,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
                       text: TextSpan(
                         style: const TextStyle(fontSize: 13, color: kSlate500),
                         children: [
-                          TextSpan(text: '${clients.length} clientes · Pendiente: '),
+                          TextSpan(text: '${paged.total} clientes · Pendiente: '),
                           TextSpan(
                             text: formatCurrency(totalPending),
                             style: const TextStyle(color: kRed, fontWeight: FontWeight.w600),
@@ -106,7 +106,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
             labelStyle: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             dividerColor: kSlate200,
             tabs: [
-              Tab(text: 'Clientes (${clients.length})'),
+              Tab(text: 'Clientes (${paged.total})'),
               Tab(text: 'Deudas (${debts.length})'),
             ],
           ),
@@ -115,7 +115,10 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
             width: 320,
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => setState(() => _search = v),
+              onChanged: (v) {
+                setState(() => _search = v);
+                ref.read(clientsPagedProvider.notifier).setSearch(v);
+              },
               decoration: const InputDecoration(
                 hintText: 'Buscar...',
                 prefixIcon: Icon(Icons.search, size: 18, color: kSlate400),
@@ -148,14 +151,17 @@ class _ClientsTab extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clients = ref.watch(clientsProvider);
+    final paged = ref.watch(clientsPagedProvider);
     final debts = ref.watch(debtsProvider);
-    final q = search.toLowerCase();
-    final filtered = q.isEmpty
-        ? clients
-        : clients.where((c) => c.fullName.toLowerCase().contains(q) || c.id.contains(q)).toList();
 
-    if (filtered.isEmpty) {
+    if (paged.loading && paged.items.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(48),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (paged.items.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(48),
@@ -180,8 +186,8 @@ class _ClientsTab extends ConsumerWidget {
     return LayoutBuilder(builder: (_, c) {
       final cols = c.maxWidth > 800 ? 3 : (c.maxWidth > 500 ? 2 : 1);
       final rows = <Widget>[];
-      for (var i = 0; i < filtered.length; i += cols) {
-        final row = filtered.sublist(i, (i + cols).clamp(0, filtered.length));
+      for (var i = 0; i < paged.items.length; i += cols) {
+        final row = paged.items.sublist(i, (i + cols).clamp(0, paged.items.length));
         rows.add(Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -245,8 +251,18 @@ class _ClientsTab extends ConsumerWidget {
             ...List.generate(cols - row.length, (_) => const Expanded(child: SizedBox())),
           ],
         ));
-        if (i + cols < filtered.length) rows.add(const SizedBox(height: 16));
+        if (i + cols < paged.items.length) rows.add(const SizedBox(height: 16));
       }
+
+      // Pagination controls
+      rows.add(const SizedBox(height: 24));
+      rows.add(_PaginationBar(
+        page: paged.page,
+        totalPages: paged.totalPages,
+        loading: paged.loading,
+        onPage: (p) => ref.read(clientsPagedProvider.notifier).setPage(p),
+      ));
+
       return Column(children: rows);
     });
   }
@@ -259,16 +275,13 @@ class _DebtsTab extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clients = ref.watch(clientsProvider);
-    final debts = ref.watch(debtsProvider);
-    final q = search.toLowerCase();
-    final filtered = q.isEmpty
-        ? debts
-        : debts.where((d) {
-            final c = clients.where((c) => c.id == d.clientId).firstOrNull;
-            return (c?.fullName ?? '').toLowerCase().contains(q) || d.description.toLowerCase().contains(q);
-          }).toList();
+    final paged = ref.watch(debtsPagedProvider);
 
-    if (filtered.isEmpty) {
+    if (paged.loading && paged.items.isEmpty) {
+      return const Padding(padding: EdgeInsets.all(48), child: Center(child: CircularProgressIndicator()));
+    }
+
+    if (paged.items.isEmpty) {
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.all(48),
@@ -277,101 +290,192 @@ class _DebtsTab extends ConsumerWidget {
           borderRadius: BorderRadius.circular(16),
           color: Colors.white,
         ),
-        child: Column(
+        child: const Column(
           children: [
-            const Icon(Icons.attach_money, size: 40, color: kSlate200),
-            const SizedBox(height: 12),
-            Text(
-              search.isEmpty ? 'No hay deudas registradas' : 'Sin resultados',
-              style: const TextStyle(color: kSlate400, fontSize: 13),
-            ),
+            Icon(Icons.attach_money, size: 40, color: kSlate200),
+            SizedBox(height: 12),
+            Text('No hay deudas registradas', style: TextStyle(color: kSlate400, fontSize: 13)),
           ],
         ),
       );
     }
 
-    return TextureCard(
-      padding: EdgeInsets.zero,
-      child: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            decoration: const BoxDecoration(
-              color: Color(0xFAF8FAFC),
-              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
-              border: Border(bottom: BorderSide(color: kSlate100)),
-            ),
-            child: const Row(
-              children: [
-                SizedBox(width: 36),
-                SizedBox(width: 12),
-                Expanded(flex: 2, child: Text('Cliente', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
-                Expanded(flex: 3, child: Text('Descripcion', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
-                SizedBox(width: 110, child: Text('Monto', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
-                SizedBox(width: 90, child: Text('Fecha', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
-                SizedBox(width: 40),
-              ],
-            ),
-          ),
-          ...filtered.indexed.map((rec) {
-            final (i, debt) = rec;
-            final client = clients.where((c) => c.id == debt.clientId).firstOrNull;
-            return Column(
-              children: [
-                if (i > 0) const Divider(height: 1, color: kSlate100),
-                Opacity(
-                  opacity: debt.paid ? 0.55 : 1,
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Row(
-                      children: [
-                        GestureDetector(
-                          onTap: () => ref.read(debtsProvider.notifier).togglePaid(debt.id),
-                          child: Icon(
-                            debt.paid ? Icons.check_circle : Icons.radio_button_unchecked,
-                            color: debt.paid ? kEmerald : kSlate300,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          flex: 2,
-                          child: Text(client?.fullName ?? '—',
-                              style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate800, fontSize: 13)),
-                        ),
-                        Expanded(
-                          flex: 3,
-                          child: Text(debt.description.isEmpty ? '—' : debt.description,
-                              style: const TextStyle(fontSize: 13, color: kSlate500)),
-                        ),
-                        SizedBox(
-                          width: 110,
-                          child: Text(
-                            formatCurrency(debt.amount),
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: debt.paid ? kSlate400 : kRed,
-                              decoration: debt.paid ? TextDecoration.lineThrough : null,
+    return Column(
+      children: [
+        TextureCard(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                decoration: const BoxDecoration(
+                  color: Color(0xFAF8FAFC),
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+                  border: Border(bottom: BorderSide(color: kSlate100)),
+                ),
+                child: const Row(
+                  children: [
+                    SizedBox(width: 36),
+                    SizedBox(width: 12),
+                    Expanded(flex: 2, child: Text('Cliente', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
+                    Expanded(flex: 3, child: Text('Descripcion', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
+                    SizedBox(width: 110, child: Text('Monto', textAlign: TextAlign.right, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
+                    SizedBox(width: 90, child: Text('Fecha', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: kSlate500))),
+                    SizedBox(width: 40),
+                  ],
+                ),
+              ),
+              ...paged.items.indexed.map((rec) {
+                final (i, debt) = rec;
+                final client = clients.where((c) => c.id == debt.clientId).firstOrNull;
+                return Column(
+                  children: [
+                    if (i > 0) const Divider(height: 1, color: kSlate100),
+                    Opacity(
+                      opacity: debt.paid ? 0.55 : 1,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                        child: Row(
+                          children: [
+                            GestureDetector(
+                              onTap: () async {
+                                await ref.read(debtsProvider.notifier).togglePaid(debt.id);
+                                ref.read(debtsPagedProvider.notifier).reload();
+                              },
+                              child: Icon(
+                                debt.paid ? Icons.check_circle : Icons.radio_button_unchecked,
+                                color: debt.paid ? kEmerald : kSlate300,
+                                size: 22,
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            Expanded(flex: 2, child: Text(client?.fullName ?? '—', style: const TextStyle(fontWeight: FontWeight.w500, color: kSlate800, fontSize: 13))),
+                            Expanded(flex: 3, child: Text(debt.description.isEmpty ? '—' : debt.description, style: const TextStyle(fontSize: 13, color: kSlate500))),
+                            SizedBox(
+                              width: 110,
+                              child: Text(formatCurrency(debt.amount), textAlign: TextAlign.right,
+                                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: debt.paid ? kSlate400 : kRed, decoration: debt.paid ? TextDecoration.lineThrough : null)),
+                            ),
+                            SizedBox(width: 90, child: Text(formatDate(debt.createdAt), style: const TextStyle(fontSize: 11, color: kSlate400))),
+                            _DelBtn(onTap: () {
+                              ref.read(debtsProvider.notifier).remove(debt.id);
+                              ref.read(debtsPagedProvider.notifier).reload();
+                            }),
+                          ],
                         ),
-                        SizedBox(
-                          width: 90,
-                          child: Text(formatDate(debt.createdAt),
-                              style: const TextStyle(fontSize: 11, color: kSlate400)),
-                        ),
-                        _DelBtn(onTap: () => ref.read(debtsProvider.notifier).remove(debt.id)),
-                      ],
+                      ),
+                    ),
+                  ],
+                );
+              }),
+            ],
+          ),
+        ),
+        if (paged.totalPages > 1) ...[
+          const SizedBox(height: 16),
+          _PaginationBar(
+            page: paged.page,
+            totalPages: paged.totalPages,
+            loading: paged.loading,
+            onPage: (p) => ref.read(debtsPagedProvider.notifier).setPage(p),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+// ── Pagination bar ────────────────────────────────────────────────────────────
+
+class _PaginationBar extends StatelessWidget {
+  const _PaginationBar({
+    required this.page,
+    required this.totalPages,
+    required this.loading,
+    required this.onPage,
+  });
+  final int page;
+  final int totalPages;
+  final bool loading;
+  final void Function(int) onPage;
+
+  @override
+  Widget build(BuildContext context) {
+    if (totalPages <= 1) return const SizedBox.shrink();
+
+    // Show at most 7 page buttons
+    const maxButtons = 7;
+    final List<int> pages = [];
+    if (totalPages <= maxButtons) {
+      pages.addAll(List.generate(totalPages, (i) => i + 1));
+    } else {
+      pages.add(1);
+      int start = (page - 2).clamp(2, totalPages - 3);
+      int end = (start + 4).clamp(5, totalPages - 1);
+      start = (end - 4).clamp(2, totalPages - 3);
+      if (start > 2) pages.add(-1); // ellipsis
+      pages.addAll(List.generate(end - start + 1, (i) => start + i));
+      if (end < totalPages - 1) pages.add(-1); // ellipsis
+      pages.add(totalPages);
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left, size: 18),
+          onPressed: (page > 1 && !loading) ? () => onPage(page - 1) : null,
+          color: kPrimary,
+          disabledColor: kSlate200,
+        ),
+        ...pages.map((p) {
+          if (p == -1) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text('...', style: TextStyle(color: kSlate400, fontSize: 13)),
+            );
+          }
+          final isCurrent = p == page;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: InkWell(
+              onTap: (!isCurrent && !loading) ? () => onPage(p) : null,
+              borderRadius: BorderRadius.circular(6),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isCurrent ? kPrimary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: isCurrent ? null : Border.all(color: kSlate200),
+                ),
+                child: Center(
+                  child: Text(
+                    '$p',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                      color: isCurrent ? Colors.white : kSlate600,
                     ),
                   ),
                 ),
-              ],
-            );
-          }),
-        ],
-      ),
+              ),
+            ),
+          );
+        }),
+        IconButton(
+          icon: const Icon(Icons.chevron_right, size: 18),
+          onPressed: (page < totalPages && !loading) ? () => onPage(page + 1) : null,
+          color: kPrimary,
+          disabledColor: kSlate200,
+        ),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+      ],
     );
   }
 }
@@ -471,9 +575,9 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    ref.read(clientsProvider.notifier).add(
+    await ref.read(clientsProvider.notifier).add(
       id: _docCtrl.text.trim(),
       name1: _name1Ctrl.text.trim(),
       name2: _name2Ctrl.text.trim(),
@@ -482,7 +586,8 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
       phone: _phoneCtrl.text.trim(),
       address: _addressCtrl.text.trim(),
     );
-    Navigator.pop(context);
+    ref.read(clientsPagedProvider.notifier).reload();
+    if (context.mounted) Navigator.pop(context);
   }
 
   @override
@@ -669,7 +774,7 @@ class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final updated = Client(
       id: widget.client.id,
@@ -681,8 +786,9 @@ class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
       address: _addressCtrl.text.trim(),
       createdAt: widget.client.createdAt,
     );
-    ref.read(clientsProvider.notifier).update(updated);
-    Navigator.pop(context);
+    await ref.read(clientsProvider.notifier).update(updated);
+    ref.read(clientsPagedProvider.notifier).reload();
+    if (context.mounted) Navigator.pop(context);
   }
 
   @override

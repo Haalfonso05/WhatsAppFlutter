@@ -18,7 +18,6 @@ class InventoryScreen extends ConsumerStatefulWidget {
 
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   final _searchCtrl = TextEditingController();
-  String _search = '';
 
   @override
   void dispose() {
@@ -32,11 +31,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final all = ref.watch(inventoryProvider);
-    final q = _search.toLowerCase();
-    final filtered = q.isEmpty
-        ? all
-        : all.where((i) => i.name.toLowerCase().contains(q) || i.category.toLowerCase().contains(q)).toList();
+    final paged = ref.watch(inventoryPagedProvider);
 
     return SingleChildScrollView(
       padding: const EdgeInsets.all(32),
@@ -54,7 +49,7 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
                       style: const TextStyle(fontSize: 28, fontWeight: FontWeight.w600),
                     ),
                     const SizedBox(height: 2),
-                    Text('${all.length} productos registrados',
+                    Text('${paged.total} productos registrados',
                         style: const TextStyle(fontSize: 13, color: kSlate500)),
                   ],
                 ),
@@ -76,7 +71,8 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
             width: 320,
             child: TextField(
               controller: _searchCtrl,
-              onChanged: (v) => setState(() => _search = v),
+              onChanged: (v) =>
+                  ref.read(inventoryPagedProvider.notifier).setSearch(v),
               decoration: const InputDecoration(
                 hintText: 'Buscar producto...',
                 prefixIcon: Icon(Icons.search, size: 18, color: kSlate400),
@@ -87,26 +83,48 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
           const SizedBox(height: 16),
           TextureCard(
             padding: EdgeInsets.zero,
-            child: filtered.isEmpty
-                ? Padding(
-                    padding: const EdgeInsets.all(48),
-                    child: Center(
-                      child: Column(
-                        children: [
-                          const Icon(Icons.inventory_2_outlined, size: 40, color: kSlate200),
-                          const SizedBox(height: 12),
-                          Text(
-                            _search.isEmpty ? 'No hay productos registrados' : 'Sin resultados',
-                            style: const TextStyle(color: kSlate400, fontSize: 14),
+            child: paged.loading && paged.items.isEmpty
+                ? const Padding(
+                    padding: EdgeInsets.all(48),
+                    child: Center(child: CircularProgressIndicator()),
+                  )
+                : paged.items.isEmpty
+                    ? Padding(
+                        padding: const EdgeInsets.all(48),
+                        child: Center(
+                          child: Column(
+                            children: [
+                              const Icon(Icons.inventory_2_outlined, size: 40, color: kSlate200),
+                              const SizedBox(height: 12),
+                              Text(
+                                paged.search.isEmpty ? 'No hay productos registrados' : 'Sin resultados',
+                                style: const TextStyle(color: kSlate400, fontSize: 14),
+                              ),
+                            ],
                           ),
+                        ),
+                      )
+                    : Column(
+                        children: [
+                          _InventoryTable(
+                            items: paged.items,
+                            onDelete: (id) async {
+                              await ref.read(inventoryProvider.notifier).remove(id);
+                              ref.read(inventoryPagedProvider.notifier).reload();
+                            },
+                          ),
+                          if (paged.totalPages > 1)
+                            Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              child: _InventoryPaginationBar(
+                                page: paged.page,
+                                totalPages: paged.totalPages,
+                                loading: paged.loading,
+                                onPage: (p) => ref.read(inventoryPagedProvider.notifier).setPage(p),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                  )
-                : _InventoryTable(
-                    items: filtered,
-                    onDelete: (id) => ref.read(inventoryProvider.notifier).remove(id),
-                  ),
           ),
         ],
       ),
@@ -189,6 +207,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
       price: price,
       threshold: widget.item.threshold,
     );
+    ref.read(inventoryPagedProvider.notifier).reload();
     setState(() => _editing = false);
   }
 
@@ -202,7 +221,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
 
   Future<void> _adjustStock(int delta) async {
     await ApiService.adjustProductStock(widget.item.id, delta);
-    ref.read(inventoryProvider.notifier).reload();
+    ref.read(inventoryPagedProvider.notifier).reload();
   }
 
   Widget _viewRow() {
@@ -379,6 +398,97 @@ class _StockBtn extends StatelessWidget {
   }
 }
 
+// ── Pagination bar ────────────────────────────────────────────────────────────
+
+class _InventoryPaginationBar extends StatelessWidget {
+  const _InventoryPaginationBar({
+    required this.page,
+    required this.totalPages,
+    required this.loading,
+    required this.onPage,
+  });
+  final int page;
+  final int totalPages;
+  final bool loading;
+  final void Function(int) onPage;
+
+  @override
+  Widget build(BuildContext context) {
+    final List<int> pages = [];
+    if (totalPages <= 7) {
+      pages.addAll(List.generate(totalPages, (i) => i + 1));
+    } else {
+      pages.add(1);
+      int start = (page - 2).clamp(2, totalPages - 3);
+      int end = (start + 4).clamp(5, totalPages - 1);
+      start = (end - 4).clamp(2, totalPages - 3);
+      if (start > 2) pages.add(-1);
+      pages.addAll(List.generate(end - start + 1, (i) => start + i));
+      if (end < totalPages - 1) pages.add(-1);
+      pages.add(totalPages);
+    }
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.chevron_left, size: 18),
+          onPressed: (page > 1 && !loading) ? () => onPage(page - 1) : null,
+          color: kPrimary,
+          disabledColor: kSlate200,
+        ),
+        ...pages.map((p) {
+          if (p == -1) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 4),
+              child: Text('...', style: TextStyle(color: kSlate400, fontSize: 13)),
+            );
+          }
+          final isCurrent = p == page;
+          return Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 2),
+            child: InkWell(
+              onTap: (!isCurrent && !loading) ? () => onPage(p) : null,
+              borderRadius: BorderRadius.circular(6),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 120),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: isCurrent ? kPrimary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(6),
+                  border: isCurrent ? null : Border.all(color: kSlate200),
+                ),
+                child: Center(
+                  child: Text(
+                    '$p',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: isCurrent ? FontWeight.w600 : FontWeight.normal,
+                      color: isCurrent ? Colors.white : kSlate600,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+        IconButton(
+          icon: const Icon(Icons.chevron_right, size: 18),
+          onPressed: (page < totalPages && !loading) ? () => onPage(page + 1) : null,
+          color: kPrimary,
+          disabledColor: kSlate200,
+        ),
+        if (loading)
+          const Padding(
+            padding: EdgeInsets.only(left: 8),
+            child: SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2)),
+          ),
+      ],
+    );
+  }
+}
+
 class _InventoryDialog extends ConsumerStatefulWidget {
   const _InventoryDialog();
 
@@ -408,14 +518,15 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
     super.dispose();
   }
 
-  void _submit() {
+  void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedType == null) return;
-    ref.read(inventoryProvider.notifier).add(
+    await ref.read(inventoryProvider.notifier).add(
       name: _nameCtrl.text.trim(), category: _selectedType!,
       stock: int.parse(_stockCtrl.text), price: double.parse(_priceCtrl.text),
       threshold: int.parse(_threshCtrl.text));
-    Navigator.pop(context);
+    ref.read(inventoryPagedProvider.notifier).reload();
+    if (context.mounted) Navigator.pop(context);
   }
 
   @override

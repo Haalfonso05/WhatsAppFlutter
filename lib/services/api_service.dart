@@ -10,12 +10,32 @@ const String _baseUrl = 'http://127.0.0.1:8000';
 class ApiService {
   // Customers
   static Future<List<Client>> getClients() async {
-    final response = await http.get(Uri.parse('$_baseUrl/customers/'));
+    final response = await http.get(Uri.parse('$_baseUrl/customers/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => Client.fromJson(e)).toList();
     }
     throw Exception('Error al obtener clientes');
+  }
+
+  static Future<Map<String, dynamic>> getClientsPaged({
+    int page = 1,
+    int size = 40,
+    String search = '',
+  }) async {
+    final uri = Uri.parse('$_baseUrl/customers/').replace(
+      queryParameters: {'page': '$page', 'size': '$size', 'search': search},
+    );
+    final response = await http.get(uri);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return {
+        'items': (data['items'] as List).map((e) => Client.fromJson(e)).toList(),
+        'total': data['total'] as int,
+        'pages': data['pages'] as int,
+      };
+    }
+    throw Exception('Error al obtener clientes paginados');
   }
 
   static Future<Client> createClient(Client client) async {
@@ -53,18 +73,38 @@ class ApiService {
     final response = await http.get(Uri.parse('$_baseUrl/products/types'));
     if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
-      return data.map((e) => {'id': e['id'] as String, 'name': e['name'] as String}).toList();
+      return data.map((e) => {'id': e['id'].toString(), 'name': e['name'] as String}).toList();
     }
     return [];
   }
 
   static Future<List<InventoryItem>> getProducts() async {
-    final response = await http.get(Uri.parse('$_baseUrl/products/'));
+    final response = await http.get(Uri.parse('$_baseUrl/products/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => InventoryItem.fromJson(e)).toList();
     }
     throw Exception('Error al obtener productos');
+  }
+
+  static Future<Map<String, dynamic>> getProductsPaged({
+    int page = 1,
+    int size = 40,
+    String search = '',
+  }) async {
+    final uri = Uri.parse('$_baseUrl/products/').replace(
+      queryParameters: {'page': '$page', 'size': '$size', 'search': search},
+    );
+    final response = await http.get(uri);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return {
+        'items': (data['items'] as List).map((e) => InventoryItem.fromJson(e)).toList(),
+        'total': data['total'] as int,
+        'pages': data['pages'] as int,
+      };
+    }
+    throw Exception('Error al obtener productos paginados');
   }
 
   static Future<InventoryItem> createProduct(InventoryItem item) async {
@@ -110,13 +150,30 @@ class ApiService {
   }
 
   // Orders
-  static Future<List<Order>> getOrders() async {
-    final response = await http.get(Uri.parse('$_baseUrl/orders/'));
+  static Future<Map<String, dynamic>> getOrdersPaged({
+    int page = 1,
+    int size = 20,
+    String search = '',
+    String status = '',
+  }) async {
+    final uri = Uri.parse('$_baseUrl/orders/').replace(
+      queryParameters: {
+        'page': '$page',
+        'size': '$size',
+        'search': search,
+        'status': status,
+      },
+    );
+    final response = await http.get(uri);
     if (response.statusCode == 200 || response.statusCode == 201) {
-      final List data = jsonDecode(response.body);
-      return data.map((e) => Order.fromJson(e)).toList();
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return {
+        'items': (data['items'] as List).map((e) => Order.fromJson(e)).toList(),
+        'total': data['total'] as int,
+        'pages': data['pages'] as int,
+      };
     }
-    throw Exception('Error al obtener ordenes');
+    throw Exception('Error al obtener pedidos paginados');
   }
 
   static Future<Order> createOrder(Order order) async {
@@ -145,7 +202,6 @@ class ApiService {
   static Future<void> createOrderDetail({
     required String orderId,
     required String customerDocument,
-    required int lineNumber,
     required String productId,
     required double amount,
     required double salePrice,
@@ -155,10 +211,9 @@ class ApiService {
       Uri.parse('$_baseUrl/orders/$orderId/details'),
       headers: {'Content-Type': 'application/json'},
       body: jsonEncode({
-        'line_number': '$lineNumber',
-        'order_id': orderId,
+        'order_id': int.parse(orderId),
         'customer_document': customerDocument,
-        'product_id': productId,
+        'product_id': int.parse(productId),
         'amount': amount,
         'sale_price': salePrice,
         'subtotal': subtotal,
@@ -171,12 +226,31 @@ class ApiService {
 
   // Debts (credit table)
   static Future<List<Debt>> getDebts() async {
-    final response = await http.get(Uri.parse('$_baseUrl/credits/'));
+    final response = await http.get(Uri.parse('$_baseUrl/credits/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {
       final List data = jsonDecode(response.body);
       return data.map((e) => Debt.fromJson(e)).toList();
     }
     throw Exception('Error al obtener deudas');
+  }
+
+  static Future<Map<String, dynamic>> getDebtsPaged({
+    int page = 1,
+    int size = 20,
+  }) async {
+    final uri = Uri.parse('$_baseUrl/credits/').replace(
+      queryParameters: {'page': '$page', 'size': '$size'},
+    );
+    final response = await http.get(uri);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      return {
+        'items': (data['items'] as List).map((e) => Debt.fromJson(e)).toList(),
+        'total': data['total'] as int,
+        'pages': data['pages'] as int,
+      };
+    }
+    throw Exception('Error al obtener deudas paginadas');
   }
 
   static Future<Debt> createDebt(Debt debt) async {

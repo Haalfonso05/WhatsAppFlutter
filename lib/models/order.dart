@@ -44,7 +44,7 @@ class Order {
   }
 
   factory Order.fromJson(Map<String, dynamic> j) => Order(
-    id: (j['id_order'] ?? j['id'] ?? '') as String,
+    id: (j['id_order'] ?? j['id'] ?? 0).toString(),
     clientName: (j['client_name'] ?? j['clientName'] ?? '') as String,
     customerDocument: (j['customer_document'] ?? '') as String,
     product: (j['product_name'] ?? j['product'] ?? '') as String,
@@ -56,11 +56,10 @@ class Order {
   );
 
   Map<String, dynamic> toJson() => {
-    'id_order': id,
     'customer_document': customerDocument,
     'application_date': createdAt,
     'shipment_date': createdAt,
     'total': total,
-    'payment_method_id': 'EF',
+    'payment_method_id': 1,
   };
 }
