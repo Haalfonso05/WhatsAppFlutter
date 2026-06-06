@@ -254,11 +254,16 @@ class ApiService {
   }
 
   static Future<Debt> createDebt(Debt debt) async {
+    final body = jsonEncode(debt.toJson());
+    // ignore: avoid_print
+    print('createDebt body: $body');
     final response = await http.post(
       Uri.parse('$_baseUrl/credits/'),
       headers: {'Content-Type': 'application/json'},
-      body: jsonEncode(debt.toJson()),
+      body: body,
     );
+    // ignore: avoid_print
+    print('createDebt response: ${response.statusCode} ${response.body}');
     if (response.statusCode == 200 || response.statusCode == 201) {
       return Debt.fromJson(jsonDecode(response.body));
     }

@@ -324,10 +324,11 @@ class _OrderCard extends ConsumerWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              _IconDelBtn(onTap: () async {
-                ref.read(ordersProvider.notifier).remove(order.id);
-                ref.read(ordersPagedProvider.notifier).reload();
-              }),
+              if (order.status == 'En espera')
+                _IconDelBtn(onTap: () async {
+                  await ref.read(ordersProvider.notifier).updateStatus(order.id, 'Cancelado');
+                  ref.read(ordersPagedProvider.notifier).reload();
+                }),
             ],
           ),
         ],
@@ -335,6 +336,8 @@ class _OrderCard extends ConsumerWidget {
     ));
   }
 }
+
+final Map<String, Map<int, bool>> _checkedByOrder = {};
 
 class _OrderDetailDialog extends ConsumerStatefulWidget {
   const _OrderDetailDialog({required this.order});
@@ -347,11 +350,12 @@ class _OrderDetailDialog extends ConsumerStatefulWidget {
 class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
   List<Map<String, dynamic>> _details = [];
   bool _loading = true;
-  final Map<int, bool> _checked = {};
+  late Map<int, bool> _checked;
 
   @override
   void initState() {
     super.initState();
+    _checked = _checkedByOrder.putIfAbsent(widget.order.id, () => {});
     _loadDetails();
   }
 
@@ -418,7 +422,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
                 ),
                 if (!_loading && _details.isNotEmpty)
                   Text(
-                    '${_checked.values.where((v) => v).length}/${_details.length} listos',
+                    '${widget.order.status == 'Listo' ? _details.length : _checked.values.where((v) => v).length}/${_details.length} listos',
                     style: const TextStyle(fontSize: 12, color: kSlate400),
                   ),
               ],
@@ -440,13 +444,14 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
                 final amount = (d['amount'] as num?)?.toInt() ?? 0;
                 final name = d['product_name'] as String? ?? productId;
                 final subtotal = (d['subtotal'] as num?)?.toDouble() ?? 0;
-                final checked = _checked[i] ?? false;
+                final isListo = widget.order.status == 'Listo';
+                final checked = isListo ? true : (_checked[i] ?? false);
 
-                // Buscar stock actual en inventario
+                // Si el pedido ya está listo, no verificar stock
                 final invMatches = inventory.where((p) => p.id == productId);
                 final invItem = invMatches.isEmpty ? null : invMatches.first;
                 final currentStock = invItem?.stock ?? 0;
-                final hasStock = currentStock >= amount;
+                final hasStock = isListo ? true : (currentStock >= amount);
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 4),
@@ -546,6 +551,35 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
               Text('"${widget.order.notes}"',
                   style: const TextStyle(
                       fontSize: 12, color: kSlate400, fontStyle: FontStyle.italic)),
+            ],
+            if (widget.order.status == 'En espera' && _details.isNotEmpty) ...[
+              const SizedBox(height: 16),
+              Builder(builder: (context) {
+                final todosMarcados = _details.isNotEmpty &&
+                    List.generate(_details.length, (i) => _checked[i] ?? false)
+                        .every((v) => v);
+                return SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: todosMarcados
+                        ? () async {
+                            await ref.read(ordersProvider.notifier)
+                                .updateStatus(widget.order.id, 'Enviado');
+                            ref.read(ordersPagedProvider.notifier).reload();
+                            if (context.mounted) Navigator.pop(context);
+                          }
+                        : null,
+                    icon: const Icon(Icons.local_shipping_outlined, size: 16),
+                    label: const Text('Marcar como Enviado'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: kPrimary,
+                      disabledBackgroundColor: kSlate200,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                  ),
+                );
+              }),
             ],
           ],
         ),
@@ -683,7 +717,7 @@ class _IconDelBtnState extends State<_IconDelBtn> {
             color: _hovered ? kRed.withValues(alpha: 0.1) : Colors.transparent,
             borderRadius: BorderRadius.circular(8),
           ),
-          child: Icon(Icons.delete_outline, size: 18, color: _hovered ? kRed : kSlate300),
+          child: Icon(Icons.close, size: 18, color: _hovered ? kRed : kSlate300),
         ),
       ),
     );

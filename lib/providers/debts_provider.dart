@@ -90,12 +90,14 @@ class DebtsNotifier extends Notifier<List<Debt>> {
 
   Future<void> add({
     required String clientId,
+    required String orderId,
     required double amount,
     required String description,
   }) async {
     final debt = Debt(
       id: '',
       clientId: clientId,
+      orderId: orderId,
       amount: amount,
       description: description,
       paid: false,

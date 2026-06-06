@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import '../core/theme.dart';
 import '../core/utils.dart';
 import '../models/client.dart';
+import '../models/order.dart';
 import '../providers/clients_provider.dart';
 import '../providers/debts_provider.dart';
+import '../services/api_service.dart' as svc;
 import '../widgets/gradient_text.dart';
 import '../widgets/texture_card.dart';
 
@@ -385,7 +388,7 @@ class _DebtsTab extends ConsumerWidget {
   }
 }
 
-// ── Pagination bar ────────────────────────────────────────────────────────────
+
 
 class _PaginationBar extends StatelessWidget {
   const _PaginationBar({
@@ -684,52 +687,134 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
   final _descCtrl = TextEditingController();
-  String? _selectedClientId;
+  Client? _selectedClient;
+  Order? _selectedOrder;
+  List<Order> _clientOrders = [];
+  bool _loadingOrders = false;
 
   @override
   void dispose() {
-    _amountCtrl.dispose(); _descCtrl.dispose();
+    _amountCtrl.dispose();
+    _descCtrl.dispose();
     super.dispose();
   }
 
-  void _submit() {
+  Future<void> _loadClientOrders(Client client) async {
+    setState(() { _loadingOrders = true; _selectedOrder = null; _clientOrders = []; });
+    try {
+      final result = await svc.ApiService.getOrdersPaged(
+        search: client.fullName, size: 50);
+      final orders = (result['items'] as List).cast<Order>();
+      setState(() { _clientOrders = orders; _loadingOrders = false; });
+    } catch (_) {
+      setState(() => _loadingOrders = false);
+    }
+  }
+
+  Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedClientId == null) return;
-    ref.read(debtsProvider.notifier).add(
-      clientId: _selectedClientId!,
-      amount: double.parse(_amountCtrl.text),
+    if (_selectedClient == null) return;
+    if (_selectedOrder == null) return;
+    final amount = double.parse(_amountCtrl.text.replaceAll(',', '.'));
+    if (amount <= 0) return;
+    await ref.read(debtsProvider.notifier).add(
+      clientId: _selectedClient!.id,
+      orderId: _selectedOrder!.id,
+      amount: amount,
       description: _descCtrl.text.trim(),
     );
-    Navigator.pop(context);
+    ref.read(debtsPagedProvider.notifier).reload();
+    if (mounted) Navigator.pop(context);
   }
 
   @override
   Widget build(BuildContext context) {
-    final clients = ref.watch(clientsProvider);
+    final canSubmit = _selectedClient != null && _selectedOrder != null;
+
     return AlertDialog(
-      title: const Text('Registrar deuda'),
+      title: const Text('Registrar deuda', style: TextStyle(fontWeight: FontWeight.w700)),
       content: SizedBox(
-        width: 360,
+        width: 400,
         child: Form(
           key: _formKey,
           child: Column(
             mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              DropdownButtonFormField<String>(
-                initialValue: _selectedClientId,
-                decoration: const InputDecoration(labelText: 'Cliente'),
-                onChanged: (v) => setState(() => _selectedClientId = v),
-                validator: (v) => v == null ? 'Selecciona un cliente' : null,
-                items: clients.map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullName))).toList(),
+              
+              _DebtSearchPicker<Client>(
+                label: 'Buscar cliente (nombre o documento)',
+                selected: _selectedClient,
+                displaySelected: (c) => '${c.fullName}  ·  ${c.id}',
+                onSearch: (q) async {
+                  final r = await svc.ApiService.getClientsPaged(search: q, size: 8);
+                  return r['items'] as List<Client>;
+                },
+                optionLabel: (c) => '${c.fullName}  ·  ${c.id}',
+                onSelected: (c) {
+                  setState(() { _selectedClient = c; _selectedOrder = null; });
+                  _loadClientOrders(c);
+                },
+                onCleared: () => setState(() {
+                  _selectedClient = null;
+                  _selectedOrder = null;
+                  _clientOrders = [];
+                }),
               ),
               const SizedBox(height: 12),
-              TextFormField(controller: _amountCtrl,
+              if (_selectedClient != null) ...[
+                if (_loadingOrders)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 8),
+                    child: Center(child: SizedBox(width: 20, height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2))),
+                  )
+                else if (_clientOrders.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 8),
+                    child: Text('Este cliente no tiene pedidos registrados.',
+                        style: TextStyle(fontSize: 12, color: kRed)),
+                  )
+                else
+                  DropdownButtonFormField<Order>(
+                    value: _selectedOrder,
+                    decoration: const InputDecoration(labelText: 'Pedido asociado'),
+                    validator: (v) => v == null ? 'Selecciona un pedido' : null,
+                    onChanged: (v) {
+                      setState(() => _selectedOrder = v);
+                      if (v != null) {
+                        _amountCtrl.text = v.total.toStringAsFixed(0);
+                      }
+                    },
+                    items: _clientOrders.map((o) => DropdownMenuItem(
+                      value: o,
+                      child: Text(
+                        'Pedido #${o.id}  ·  ${formatCurrency(o.total)}  ·  ${o.status}',
+                        style: const TextStyle(fontSize: 13),
+                      ),
+                    )).toList(),
+                  ),
+                const SizedBox(height: 12),
+              ],
+
+              TextFormField(
+                controller: _amountCtrl,
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
                 decoration: const InputDecoration(labelText: 'Monto (COP)'),
-                validator: (v) => double.tryParse(v ?? '') == null ? 'Invalido' : null),
+                validator: (v) {
+                  final n = double.tryParse(v?.replaceAll(',', '.') ?? '');
+                  if (n == null) return 'Ingresa un número válido';
+                  if (n <= 0) return 'El monto debe ser mayor a 0';
+                  return null;
+                },
+              ),
               const SizedBox(height: 12),
-              TextFormField(controller: _descCtrl,
-                decoration: const InputDecoration(labelText: 'Descripcion')),
+
+              TextFormField(
+                controller: _descCtrl,
+                decoration: const InputDecoration(labelText: 'Descripción (opcional)'),
+                maxLines: 2,
+              ),
             ],
           ),
         ),
@@ -737,10 +822,157 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
       actions: [
         OutlinedButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
         FilledButton(
-          onPressed: _submit,
+          onPressed: canSubmit ? _submit : null,
           style: FilledButton.styleFrom(backgroundColor: kPrimary),
           child: const Text('Registrar deuda'),
         ),
+      ],
+    );
+  }
+}
+
+// ── SearchPicker reutilizable para el diálogo de deudas ──────────────────────
+
+class _DebtSearchPicker<T> extends StatefulWidget {
+  const _DebtSearchPicker({
+    required this.label,
+    required this.selected,
+    required this.displaySelected,
+    required this.onSearch,
+    required this.optionLabel,
+    required this.onSelected,
+    required this.onCleared,
+  });
+  final String label;
+  final T? selected;
+  final String Function(T) displaySelected;
+  final Future<List<T>> Function(String) onSearch;
+  final String Function(T) optionLabel;
+  final void Function(T) onSelected;
+  final VoidCallback onCleared;
+
+  @override
+  State<_DebtSearchPicker<T>> createState() => _DebtSearchPickerState<T>();
+}
+
+class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
+  final _ctrl = TextEditingController();
+  final _focus = FocusNode();
+  List<T> _results = [];
+  bool _loading = false;
+  bool _open = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _focus.addListener(() {
+      if (!_focus.hasFocus) {
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted) setState(() => _open = false);
+        });
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search(String q) async {
+    if (q.trim().length < 2) {
+      setState(() { _results = []; _open = false; });
+      return;
+    }
+    setState(() { _loading = true; _open = true; });
+    try {
+      final res = await widget.onSearch(q.trim());
+      if (mounted) setState(() { _results = res; _loading = false; });
+    } catch (_) {
+      if (mounted) setState(() { _loading = false; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (widget.selected != null) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          border: Border.all(color: kPrimary),
+          borderRadius: BorderRadius.circular(8),
+          color: kPrimary.withValues(alpha: 0.05),
+        ),
+        child: Row(children: [
+          Expanded(child: Text(widget.displaySelected(widget.selected!),
+              style: const TextStyle(fontSize: 13, color: kSlate800))),
+          GestureDetector(
+            onTap: () { _ctrl.clear(); widget.onCleared(); },
+            child: const Icon(Icons.close, size: 16, color: kSlate400),
+          ),
+        ]),
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextField(
+          controller: _ctrl,
+          focusNode: _focus,
+          onChanged: _search,
+          style: const TextStyle(fontSize: 13),
+          decoration: InputDecoration(
+            labelText: widget.label,
+            suffixIcon: _loading
+                ? const Padding(padding: EdgeInsets.all(12),
+                    child: SizedBox(width: 16, height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2)))
+                : const Icon(Icons.search, size: 18, color: kSlate400),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+          ),
+        ),
+        if (_open && _results.isNotEmpty)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: kSlate200),
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.06),
+                  blurRadius: 8, offset: const Offset(0, 2))],
+            ),
+            child: Column(
+              children: _results.map((item) => InkWell(
+                onTap: () {
+                  _ctrl.clear();
+                  setState(() { _results = []; _open = false; });
+                  _focus.unfocus();
+                  widget.onSelected(item);
+                },
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  child: Row(children: [
+                    Expanded(child: Text(widget.optionLabel(item),
+                        style: const TextStyle(fontSize: 13, color: kSlate800))),
+                  ]),
+                ),
+              )).toList(),
+            ),
+          ),
+        if (_open && !_loading && _results.isEmpty && _ctrl.text.length >= 2)
+          Container(
+            margin: const EdgeInsets.only(top: 2),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              border: Border.all(color: kSlate200),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text('Sin resultados', style: TextStyle(fontSize: 13, color: kSlate400)),
+          ),
       ],
     );
   }
