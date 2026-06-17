@@ -8,12 +8,11 @@ import 'widgets/accessibility_overlay.dart';
 class App extends ConsumerWidget {
   const App({super.key});
 
-  
   static const ColorFilter _invert = ColorFilter.matrix(<double>[
-    -1, 0, 0, 0, 255, //
-    0, -1, 0, 0, 255, //
-    0, 0, -1, 0, 255, //
-    0, 0, 0, 1, 0, //
+    -1, 0, 0, 0, 255,
+    0, -1, 0, 0, 255,
+    0, 0, -1, 0, 255,
+    0, 0, 0, 1, 0,
   ]);
 
   @override
