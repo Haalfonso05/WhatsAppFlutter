@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:intl/intl.dart';
+
 import '../core/theme.dart';
 import '../core/utils.dart';
 import '../models/client.dart';
@@ -257,7 +257,7 @@ class _ClientsTab extends ConsumerWidget {
         if (i + cols < paged.items.length) rows.add(const SizedBox(height: 16));
       }
 
-      // Pagination controls
+      
       rows.add(const SizedBox(height: 24));
       rows.add(_PaginationBar(
         page: paged.page,

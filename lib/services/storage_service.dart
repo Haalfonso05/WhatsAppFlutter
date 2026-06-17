@@ -51,26 +51,32 @@ class StorageService {
       _prefs.setString(_kCurrentUser, jsonEncode(u.toJson()));
   Future<void> clearCurrentUser() async => _prefs.remove(_kCurrentUser);
 
-  // Inventory
+  
   List<InventoryItem> getInventory() => _get(_kInventory, InventoryItem.fromJson);
   Future<void> saveInventory(List<InventoryItem> v) => _set(_kInventory, v, (i) => i.toJson());
 
-  // Orders
+ 
   List<Order> getOrders() => _get(_kOrders, Order.fromJson);
   Future<void> saveOrders(List<Order> v) => _set(_kOrders, v, (o) => o.toJson());
 
-  // Clients
+  
   List<Client> getClients() => _get(_kClients, Client.fromJson);
   Future<void> saveClients(List<Client> v) => _set(_kClients, v, (c) => c.toJson());
 
-  // Debts
+ 
   List<Debt> getDebts() => _get(_kDebts, Debt.fromJson);
   Future<void> saveDebts(List<Debt> v) => _set(_kDebts, v, (d) => d.toJson());
 
-  // Sales
+  
   List<Sale> getSales() => _get(_kSales, Sale.fromJson);
   Future<void> saveSales(List<Sale> v) => _set(_kSales, v, (s) => s.toJson());
+
+  
+  bool getBoolPref(String key, bool def) => _prefs.getBool(key) ?? def;
+  Future<void> setBoolPref(String key, bool v) => _prefs.setBool(key, v);
+  double getDoublePref(String key, double def) => _prefs.getDouble(key) ?? def;
+  Future<void> setDoublePref(String key, double v) => _prefs.setDouble(key, v);
 }
 
-// Overridden in main.dart with a real SharedPreferences instance
+
 final storageServiceProvider = Provider<StorageService>((_) => throw UnimplementedError());

@@ -4,7 +4,7 @@ import '../core/theme.dart';
 import '../core/utils.dart';
 import '../providers/auth_provider.dart';
 import '../providers/inventory_provider.dart';
-import '../providers/sales_provider.dart';
+import '../providers/sales_stats_provider.dart';
 import '../widgets/texture_card.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/status_badge.dart';
@@ -16,17 +16,8 @@ class DashboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
     final inventory = ref.watch(inventoryProvider);
-    final sales = ref.watch(salesProvider);
+    final stats = ref.watch(salesStatsProvider);
 
-    final today = todayPrefix();
-    final month = currentMonthPrefix();
-
-    final todaySales = sales
-        .where((s) => s.date.startsWith(today))
-        .fold(0.0, (sum, s) => sum + s.amount);
-    final monthSales = sales
-        .where((s) => s.date.startsWith(month))
-        .fold(0.0, (sum, s) => sum + s.amount);
     final lowStock = inventory.where((i) => i.isLowStock).toList();
 
     return SingleChildScrollView(
@@ -44,7 +35,12 @@ class DashboardScreen extends ConsumerWidget {
             style: const TextStyle(fontSize: 13, color: kSlate500),
           ),
           const SizedBox(height: 28),
-          _MetricsGrid(todaySales: todaySales, monthSales: monthSales, lowStockCount: lowStock.length),
+          _MetricsGrid(
+            todaySales: stats.todaySales,
+            monthSales: stats.monthSales,
+            lowStockCount: lowStock.length,
+            loading: stats.loading,
+          ),
           const SizedBox(height: 32),
           Row(
             children: const [
@@ -133,11 +129,13 @@ class _MetricsGrid extends StatelessWidget {
     required this.todaySales,
     required this.monthSales,
     required this.lowStockCount,
+    required this.loading,
   });
 
   final double todaySales;
   final double monthSales;
   final int lowStockCount;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) {
@@ -146,15 +144,15 @@ class _MetricsGrid extends StatelessWidget {
       final cards = [
         _MetricCard(
           label: 'Ventas del dia',
-          value: formatCurrency(todaySales),
+          value: loading ? '...' : formatCurrency(todaySales),
           icon: Icons.attach_money,
           iconBg: const Color(0xFFD1FAE5),
           iconColor: const Color(0xFF065F46),
         ),
         _MetricCard(
           label: 'Ventas del mes',
-          value: formatCurrency(monthSales),
-          icon: Icons.trending_up,
+          value: loading ? '...' : formatCurrency(monthSales),
+          icon: Icons.trending_up,  
           iconBg: const Color(0xFFE0E7FF),
           iconColor: const Color(0xFF3730A3),
         ),

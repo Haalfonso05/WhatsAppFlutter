@@ -145,7 +145,7 @@ class OrdersNotifier extends Notifier<List<Order>> {
   Future<void> _decrementStockForOrder(String orderId) async {
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/orders/${int.parse(orderId)}/details'),
+        Uri.parse('https://whatsappbackend-production-b7ef.up.railway.app/orders/${int.parse(orderId)}/details'),
       );
       if (response.statusCode != 200) return;
       final List details = jsonDecode(response.body);

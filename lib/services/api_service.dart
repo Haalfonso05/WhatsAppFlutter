@@ -4,11 +4,64 @@ import '../models/client.dart';
 import '../models/inventory_item.dart';
 import '../models/order.dart';
 import '../models/debt.dart';
+import '../models/user.dart';
 
-const String _baseUrl = 'http://127.0.0.1:8000';
+const String _baseUrl = 'https://whatsappbackend-production-b7ef.up.railway.app';
 
 class ApiService {
-  // Customers
+  static Future<({String? error, UserSession? user})> register({
+    required String name,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/register'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'name': name, 'email': email, 'password': password}),
+      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return (
+          error: null,
+          user: UserSession(
+            id: data['id'].toString(),
+            name: data['name'] as String,
+            email: data['email'] as String,
+          ),
+        );
+      }
+      return (error: data['detail'] as String? ?? 'Error al registrar', user: null);
+    } catch (_) {
+      return (error: 'No se pudo conectar con el servidor', user: null);
+    }
+  }
+  static Future<({String? error, UserSession? user})> login({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('$_baseUrl/auth/login'),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'email': email, 'password': password}),
+      );
+      final data = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return (
+          error: null,
+          user: UserSession(
+            id: data['id'].toString(),
+            name: data['name'] as String,
+            email: data['email'] as String,
+          ),
+        );
+      }
+      return (error: data['detail'] as String? ?? 'Credenciales incorrectas', user: null);
+    } catch (_) {
+      return (error: 'No se pudo conectar con el servidor', user: null);
+    }
+  }
   static Future<List<Client>> getClients() async {
     final response = await http.get(Uri.parse('$_baseUrl/customers/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {

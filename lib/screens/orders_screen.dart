@@ -8,7 +8,7 @@ import '../core/utils.dart';
 import '../models/client.dart';
 import '../models/inventory_item.dart';
 import '../models/order.dart';
-import '../providers/clients_provider.dart';
+
 import '../providers/inventory_provider.dart';
 import '../providers/orders_provider.dart';
 import '../services/api_service.dart' as svc;
@@ -362,7 +362,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
   Future<void> _loadDetails() async {
     try {
       final response = await http.get(
-        Uri.parse('http://127.0.0.1:8000/orders/${widget.order.id}/details'),
+        Uri.parse('https://whatsappbackend-production-b7ef.up.railway.app/orders/${widget.order.id}/details'),
       );
       if (response.statusCode == 200) {
         final List data = jsonDecode(response.body);
@@ -447,7 +447,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
                 final isListo = widget.order.status == 'Listo';
                 final checked = isListo ? true : (_checked[i] ?? false);
 
-                // Si el pedido ya está listo, no verificar stock
+                
                 final invMatches = inventory.where((p) => p.id == productId);
                 final invItem = invMatches.isEmpty ? null : invMatches.first;
                 final currentStock = invItem?.stock ?? 0;
