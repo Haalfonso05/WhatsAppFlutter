@@ -1,3 +1,5 @@
+// Modelo de cliente
+// clase Client
 class Client {
   final String id;
   final String name1;
@@ -40,6 +42,7 @@ class Client {
     createdAt: (j['createdAt'] as String?) ?? '',
   );
 
+  // convierte el objeto a JSON
   Map<String, dynamic> toJson() => {
     'document': id,
     'name_1': name1,

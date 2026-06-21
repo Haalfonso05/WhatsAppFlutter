@@ -1,8 +1,10 @@
+// Pantalla de registro
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 
+// clase RegisterScreen
 class RegisterScreen extends ConsumerStatefulWidget {
   const RegisterScreen({super.key});
 
@@ -10,6 +12,7 @@ class RegisterScreen extends ConsumerStatefulWidget {
   ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
+// clase _RegisterScreenState
 class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   // Paleta
   static const _bg = Color(0xFFF4F4F5);
@@ -28,6 +31,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   String? _error;
   bool _obscure = true;
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -36,6 +40,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     super.dispose();
   }
 
+  // funcion _submit
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -57,6 +62,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -257,6 +263,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   }
 }
 
+// clase _LightField
 class _LightField extends StatelessWidget {
   const _LightField({
     required this.controller,
@@ -283,6 +290,7 @@ class _LightField extends StatelessWidget {
   static const _accent = Color(0xFF10B981);
   static const _muted = Color(0xFF94A3B8);
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Column(

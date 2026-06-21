@@ -1,3 +1,5 @@
+// Modelo de deuda (fiado)
+// clase Debt
 class Debt {
   final String id;
   final String clientId;
@@ -17,6 +19,7 @@ class Debt {
     required this.createdAt,
   });
 
+  // funcion togglePaid
   Debt togglePaid() => Debt(
     id: id,
     clientId: clientId,
@@ -39,6 +42,7 @@ class Debt {
     createdAt: (j['creation_date'] ?? j['createdAt'] ?? '') as String,
   );
 
+  // convierte el objeto a JSON
   Map<String, dynamic> toJson() => {
     'customer_document': clientId,
     'order_id': int.tryParse(orderId) ?? 0,

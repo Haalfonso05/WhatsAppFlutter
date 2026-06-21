@@ -1,5 +1,7 @@
+// Texto con degradado
 import 'package:flutter/material.dart';
 
+// clase GradientText
 class GradientText extends StatelessWidget {
   const GradientText(
     this.text, {
@@ -14,6 +16,7 @@ class GradientText extends StatelessWidget {
   final TextStyle style;
   final Gradient gradient;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return ShaderMask(

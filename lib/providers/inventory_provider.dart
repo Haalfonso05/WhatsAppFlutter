@@ -1,9 +1,11 @@
+// Provider de inventario (paginacion)
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/inventory_item.dart';
 import '../services/api_service.dart';
 
 // ── Paged state ──────────────────────────────────────────────────────────────
 
+// clase InventoryPagedState
 class InventoryPagedState {
   final List<InventoryItem> items;
   final int page;
@@ -21,6 +23,7 @@ class InventoryPagedState {
     this.search = '',
   });
 
+  // devuelve una copia con campos cambiados
   InventoryPagedState copyWith({
     List<InventoryItem>? items,
     int? page,
@@ -39,13 +42,16 @@ class InventoryPagedState {
       );
 }
 
+// clase InventoryPagedNotifier
 class InventoryPagedNotifier extends Notifier<InventoryPagedState> {
+  // construye la interfaz del widget
   @override
   InventoryPagedState build() {
     Future.microtask(_fetch);
     return const InventoryPagedState(loading: true);
   }
 
+  // funcion _fetch
   Future<void> _fetch() async {
     try {
       final result = await ApiService.getProductsPaged(
@@ -64,16 +70,19 @@ class InventoryPagedNotifier extends Notifier<InventoryPagedState> {
     }
   }
 
+  // funcion setSearch
   void setSearch(String search) {
     state = state.copyWith(search: search, page: 1, loading: true);
     _fetch();
   }
 
+  // funcion setPage
   void setPage(int page) {
     state = state.copyWith(page: page, loading: true);
     _fetch();
   }
 
+  // funcion reload
   Future<void> reload() async {
     state = state.copyWith(loading: true);
     await _fetch();
@@ -84,13 +93,16 @@ final inventoryPagedProvider =
     NotifierProvider<InventoryPagedNotifier, InventoryPagedState>(
         InventoryPagedNotifier.new);
 
+// clase InventoryNotifier
 class InventoryNotifier extends Notifier<List<InventoryItem>> {
+  // construye la interfaz del widget
   @override
   List<InventoryItem> build() {
     _load();
     return [];
   }
 
+  // funcion _load
   Future<void> _load() async {
     try {
       final items = await ApiService.getProducts();
@@ -98,6 +110,7 @@ class InventoryNotifier extends Notifier<List<InventoryItem>> {
     } catch (_) {}
   }
 
+  // funcion add
   Future<void> add({
     required String name,
     required String category,
@@ -118,6 +131,7 @@ class InventoryNotifier extends Notifier<List<InventoryItem>> {
     state = [...state, created];
   }
 
+  // funcion update
   Future<void> update(String id, {
     required String name,
     required String category,
@@ -138,6 +152,7 @@ class InventoryNotifier extends Notifier<List<InventoryItem>> {
     state = state.map((i) => i.id == id ? updated : i).toList();
   }
 
+  // funcion remove
   Future<void> remove(String id) async {
     await ApiService.deleteProduct(id);
     state = state.where((i) => i.id != id).toList();

@@ -1,3 +1,4 @@
+// Llamadas HTTP al backend
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../models/client.dart';
@@ -8,7 +9,9 @@ import '../models/user.dart';
 
 const String _baseUrl = 'https://whatsappbackend-production-b7ef.up.railway.app';
 
+// clase ApiService
 class ApiService {
+  // funcion register
   static Future<({String? error, UserSession? user})> register({
     required String name,
     required String email,
@@ -36,6 +39,7 @@ class ApiService {
       return (error: 'No se pudo conectar con el servidor', user: null);
     }
   }
+  // funcion login
   static Future<({String? error, UserSession? user})> login({
     required String email,
     required String password,
@@ -62,6 +66,7 @@ class ApiService {
       return (error: 'No se pudo conectar con el servidor', user: null);
     }
   }
+  // funcion getClients
   static Future<List<Client>> getClients() async {
     final response = await http.get(Uri.parse('$_baseUrl/customers/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -71,6 +76,7 @@ class ApiService {
     throw Exception('Error al obtener clientes');
   }
 
+  // funcion getClientsPaged
   static Future<Map<String, dynamic>> getClientsPaged({
     int page = 1,
     int size = 40,
@@ -91,6 +97,7 @@ class ApiService {
     throw Exception('Error al obtener clientes paginados');
   }
 
+  // funcion createClient
   static Future<Client> createClient(Client client) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/customers/'),
@@ -103,6 +110,7 @@ class ApiService {
     throw Exception('Error al crear cliente: ${response.body}');
   }
 
+  // funcion updateClient
   static Future<Client> updateClient(Client client) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/customers/${client.id}'),
@@ -115,6 +123,7 @@ class ApiService {
     throw Exception('Error al actualizar cliente: ${response.body}');
   }
 
+  // funcion deleteClient
   static Future<void> deleteClient(String document) async {
     final response = await http.delete(Uri.parse('$_baseUrl/customers/$document'));
     if (response.statusCode != 200) {
@@ -122,6 +131,7 @@ class ApiService {
     }
   }
 
+  // funcion getProductTypes
   static Future<List<Map<String, String>>> getProductTypes() async {
     final response = await http.get(Uri.parse('$_baseUrl/products/types'));
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -131,6 +141,7 @@ class ApiService {
     return [];
   }
 
+  // funcion getProducts
   static Future<List<InventoryItem>> getProducts() async {
     final response = await http.get(Uri.parse('$_baseUrl/products/all'));
     if (response.statusCode == 200 || response.statusCode == 201) {
@@ -140,6 +151,7 @@ class ApiService {
     throw Exception('Error al obtener productos');
   }
 
+  // funcion getProductsPaged
   static Future<Map<String, dynamic>> getProductsPaged({
     int page = 1,
     int size = 40,
@@ -160,6 +172,7 @@ class ApiService {
     throw Exception('Error al obtener productos paginados');
   }
 
+  // funcion createProduct
   static Future<InventoryItem> createProduct(InventoryItem item) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/products/'),
@@ -172,6 +185,7 @@ class ApiService {
     throw Exception('Error al crear producto: ${response.body}');
   }
 
+  // funcion updateProduct
   static Future<InventoryItem> updateProduct(InventoryItem item) async {
     final response = await http.put(
       Uri.parse('$_baseUrl/products/${item.id}'),
@@ -184,6 +198,7 @@ class ApiService {
     throw Exception('Error al actualizar producto: ${response.body}');
   }
 
+  // funcion adjustProductStock
   static Future<void> adjustProductStock(String id, num delta) async {
     final response = await http.patch(
       Uri.parse('$_baseUrl/products/$id/stock'),
@@ -195,6 +210,7 @@ class ApiService {
     }
   }
 
+  // funcion deleteProduct
   static Future<void> deleteProduct(String id) async {
     final response = await http.delete(Uri.parse('$_baseUrl/products/$id'));
     if (response.statusCode != 200) {
@@ -229,6 +245,7 @@ class ApiService {
     throw Exception('Error al obtener pedidos paginados');
   }
 
+  // funcion createOrder
   static Future<Order> createOrder(Order order) async {
     final response = await http.post(
       Uri.parse('$_baseUrl/orders/'),
@@ -241,6 +258,7 @@ class ApiService {
     throw Exception('Error al crear orden: ${response.body}');
   }
 
+  // funcion updateOrderStatus
   static Future<void> updateOrderStatus(String id, String status) async {
     final response = await http.patch(
       Uri.parse('$_baseUrl/orders/$id/status'),
@@ -252,6 +270,7 @@ class ApiService {
     }
   }
 
+  // funcion createOrderDetail
   static Future<void> createOrderDetail({
     required String orderId,
     required String customerDocument,
@@ -287,6 +306,7 @@ class ApiService {
     throw Exception('Error al obtener deudas');
   }
 
+  // funcion getDebtsPaged
   static Future<Map<String, dynamic>> getDebtsPaged({
     int page = 1,
     int size = 20,
@@ -306,6 +326,7 @@ class ApiService {
     throw Exception('Error al obtener deudas paginadas');
   }
 
+  // funcion createDebt
   static Future<Debt> createDebt(Debt debt) async {
     final body = jsonEncode(debt.toJson());
     // ignore: avoid_print
@@ -323,6 +344,7 @@ class ApiService {
     throw Exception('Error al crear deuda: ${response.body}');
   }
 
+  // funcion toggleDebtPaid
   static Future<void> toggleDebtPaid(int id, bool paid) async {
     final response = await http.patch(
       Uri.parse('$_baseUrl/credits/$id'),

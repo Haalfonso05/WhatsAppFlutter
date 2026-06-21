@@ -1,3 +1,5 @@
+// Modelo de producto del inventario
+// clase InventoryItem
 class InventoryItem {
   final String id;
   final String name;
@@ -19,6 +21,7 @@ class InventoryItem {
 
   bool get isLowStock => stock <= threshold;
 
+  // devuelve una copia con campos cambiados
   InventoryItem copyWith({
     String? name,
     String? category,
@@ -46,6 +49,7 @@ class InventoryItem {
     createdAt: (j['createdAt'] as String?) ?? '',
   );
 
+  // convierte el objeto a JSON
   Map<String, dynamic> toJson() => {
     'name': name,
     'reference_price': price,

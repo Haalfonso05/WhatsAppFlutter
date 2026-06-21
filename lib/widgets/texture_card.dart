@@ -1,10 +1,13 @@
+// Tarjeta con textura
 import 'package:flutter/material.dart';
 
+// clase TextureCard
 class TextureCard extends StatelessWidget {
   const TextureCard({super.key, required this.child, this.padding});
   final Widget child;
   final EdgeInsetsGeometry? padding;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Container(

@@ -1,3 +1,4 @@
+// Persistencia local (shared_preferences)
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -16,6 +17,7 @@ const _kClients = 'mgmt_clients';
 const _kDebts = 'mgmt_debts';
 const _kSales = 'mgmt_sales';
 
+// clase StorageService
 class StorageService {
   const StorageService(this._prefs);
   final SharedPreferences _prefs;
@@ -36,6 +38,7 @@ class StorageService {
   List<AppUser> getUsers() => _get(_kUsers, AppUser.fromJson);
   Future<void> saveUsers(List<AppUser> v) => _set(_kUsers, v, (u) => u.toJson());
 
+  // funcion getCurrentUser
   UserSession? getCurrentUser() {
     final raw = _prefs.getString(_kCurrentUser);
     if (raw == null) return null;
@@ -46,6 +49,7 @@ class StorageService {
     }
   }
 
+  // funcion setCurrentUser
   Future<void> setCurrentUser(UserSession u) =>
       _prefs.setString(_kCurrentUser, jsonEncode(u.toJson()));
   Future<void> clearCurrentUser() async => _prefs.remove(_kCurrentUser);

@@ -1,3 +1,4 @@
+// Pantalla de clientes y deudas
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -11,6 +12,7 @@ import '../services/api_service.dart' as svc;
 import '../widgets/gradient_text.dart';
 import '../widgets/texture_card.dart';
 
+// clase ClientsScreen
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
 
@@ -18,12 +20,14 @@ class ClientsScreen extends ConsumerStatefulWidget {
   ConsumerState<ClientsScreen> createState() => _ClientsScreenState();
 }
 
+// clase _ClientsScreenState
 class _ClientsScreenState extends ConsumerState<ClientsScreen>
     with SingleTickerProviderStateMixin {
   late final _tabCtrl = TabController(length: 2, vsync: this);
   final _searchCtrl = TextEditingController();
   String _search = '';
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _tabCtrl.dispose();
@@ -31,14 +35,17 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
     super.dispose();
   }
 
+  // funcion _openClientForm
   void _openClientForm() {
     showDialog(context: context, builder: (_) => const _ClientDialog());
   }
 
+  // funcion _openDebtForm
   void _openDebtForm() {
     showDialog(context: context, builder: (_) => const _DebtDialog());
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final paged = ref.watch(clientsPagedProvider);
@@ -148,10 +155,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen>
   }
 }
 
+// clase _ClientsTab
 class _ClientsTab extends ConsumerWidget {
   const _ClientsTab({super.key, required this.search});
   final String search;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final paged = ref.watch(clientsPagedProvider);
@@ -271,10 +280,12 @@ class _ClientsTab extends ConsumerWidget {
   }
 }
 
+// clase _DebtsTab
 class _DebtsTab extends ConsumerWidget {
   const _DebtsTab({super.key, required this.search});
   final String search;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final clients = ref.watch(clientsProvider);
@@ -390,6 +401,7 @@ class _DebtsTab extends ConsumerWidget {
 
 
 
+// clase _PaginationBar
 class _PaginationBar extends StatelessWidget {
   const _PaginationBar({
     required this.page,
@@ -402,6 +414,7 @@ class _PaginationBar extends StatelessWidget {
   final bool loading;
   final void Function(int) onPage;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     if (totalPages <= 1) return const SizedBox.shrink();
@@ -483,6 +496,7 @@ class _PaginationBar extends StatelessWidget {
   }
 }
 
+// clase _EditBtn
 class _EditBtn extends StatefulWidget {
   const _EditBtn({required this.onTap});
   final VoidCallback onTap;
@@ -491,9 +505,11 @@ class _EditBtn extends StatefulWidget {
   State<_EditBtn> createState() => _EditBtnState();
 }
 
+// clase _EditBtnState
 class _EditBtnState extends State<_EditBtn> {
   bool _hovered = false;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -516,6 +532,7 @@ class _EditBtnState extends State<_EditBtn> {
   }
 }
 
+// clase _DelBtn
 class _DelBtn extends StatefulWidget {
   const _DelBtn({required this.onTap});
   final VoidCallback onTap;
@@ -524,9 +541,11 @@ class _DelBtn extends StatefulWidget {
   State<_DelBtn> createState() => _DelBtnState();
 }
 
+// clase _DelBtnState
 class _DelBtnState extends State<_DelBtn> {
   bool _hovered = false;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -549,6 +568,7 @@ class _DelBtnState extends State<_DelBtn> {
   }
 }
 
+// clase _ClientDialog
 class _ClientDialog extends ConsumerStatefulWidget {
   const _ClientDialog();
 
@@ -556,6 +576,7 @@ class _ClientDialog extends ConsumerStatefulWidget {
   ConsumerState<_ClientDialog> createState() => _ClientDialogState();
 }
 
+// clase _ClientDialogState
 class _ClientDialogState extends ConsumerState<_ClientDialog> {
   final _formKey = GlobalKey<FormState>();
   final _docCtrl      = TextEditingController();
@@ -566,6 +587,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
   final _phoneCtrl    = TextEditingController();
   final _addressCtrl  = TextEditingController();
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _docCtrl.dispose();
@@ -578,6 +600,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     super.dispose();
   }
 
+  // funcion _submit
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     await ref.read(clientsProvider.notifier).add(
@@ -593,6 +616,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
     if (context.mounted) Navigator.pop(context);
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
@@ -676,6 +700,7 @@ class _ClientDialogState extends ConsumerState<_ClientDialog> {
   }
 }
 
+// clase _DebtDialog
 class _DebtDialog extends ConsumerStatefulWidget {
   const _DebtDialog();
 
@@ -683,6 +708,7 @@ class _DebtDialog extends ConsumerStatefulWidget {
   ConsumerState<_DebtDialog> createState() => _DebtDialogState();
 }
 
+// clase _DebtDialogState
 class _DebtDialogState extends ConsumerState<_DebtDialog> {
   final _formKey = GlobalKey<FormState>();
   final _amountCtrl = TextEditingController();
@@ -692,6 +718,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
   List<Order> _clientOrders = [];
   bool _loadingOrders = false;
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _amountCtrl.dispose();
@@ -699,6 +726,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
     super.dispose();
   }
 
+  // funcion _loadClientOrders
   Future<void> _loadClientOrders(Client client) async {
     setState(() { _loadingOrders = true; _selectedOrder = null; _clientOrders = []; });
     try {
@@ -711,6 +739,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
     }
   }
 
+  // funcion _submit
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedClient == null) return;
@@ -727,6 +756,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
     if (mounted) Navigator.pop(context);
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final canSubmit = _selectedClient != null && _selectedOrder != null;
@@ -833,6 +863,7 @@ class _DebtDialogState extends ConsumerState<_DebtDialog> {
 
 // ── SearchPicker reutilizable para el diálogo de deudas ──────────────────────
 
+// clase _DebtSearchPicker
 class _DebtSearchPicker<T> extends StatefulWidget {
   const _DebtSearchPicker({
     required this.label,
@@ -855,6 +886,7 @@ class _DebtSearchPicker<T> extends StatefulWidget {
   State<_DebtSearchPicker<T>> createState() => _DebtSearchPickerState<T>();
 }
 
+// clase _DebtSearchPickerState
 class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
   final _ctrl = TextEditingController();
   final _focus = FocusNode();
@@ -862,6 +894,7 @@ class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
   bool _loading = false;
   bool _open = false;
 
+  // inicializa el estado del widget
   @override
   void initState() {
     super.initState();
@@ -874,6 +907,7 @@ class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
     });
   }
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _ctrl.dispose();
@@ -881,6 +915,7 @@ class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
     super.dispose();
   }
 
+  // funcion _search
   Future<void> _search(String q) async {
     if (q.trim().length < 2) {
       setState(() { _results = []; _open = false; });
@@ -895,6 +930,7 @@ class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     if (widget.selected != null) {
@@ -978,6 +1014,7 @@ class _DebtSearchPickerState<T> extends State<_DebtSearchPicker<T>> {
   }
 }
 
+// clase _EditClientDialog
 class _EditClientDialog extends ConsumerStatefulWidget {
   const _EditClientDialog({required this.client});
   final Client client;
@@ -986,6 +1023,7 @@ class _EditClientDialog extends ConsumerStatefulWidget {
   ConsumerState<_EditClientDialog> createState() => _EditClientDialogState();
 }
 
+// clase _EditClientDialogState
 class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
   final _formKey = GlobalKey<FormState>();
   late final _name1Ctrl    = TextEditingController(text: widget.client.name1);
@@ -995,6 +1033,7 @@ class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
   late final _phoneCtrl    = TextEditingController(text: widget.client.phone);
   late final _addressCtrl  = TextEditingController(text: widget.client.address);
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _name1Ctrl.dispose();
@@ -1006,6 +1045,7 @@ class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
     super.dispose();
   }
 
+  // funcion _submit
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     final updated = Client(
@@ -1023,6 +1063,7 @@ class _EditClientDialogState extends ConsumerState<_EditClientDialog> {
     if (context.mounted) Navigator.pop(context);
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return AlertDialog(

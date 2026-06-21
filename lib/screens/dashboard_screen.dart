@@ -1,3 +1,4 @@
+// Pantalla de metricas
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
@@ -9,9 +10,11 @@ import '../widgets/texture_card.dart';
 import '../widgets/gradient_text.dart';
 import '../widgets/status_badge.dart';
 
+// clase DashboardScreen
 class DashboardScreen extends ConsumerWidget {
   const DashboardScreen({super.key});
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final user = ref.watch(authProvider);
@@ -124,6 +127,7 @@ class DashboardScreen extends ConsumerWidget {
   }
 }
 
+// clase _MetricsGrid
 class _MetricsGrid extends StatelessWidget {
   const _MetricsGrid({
     required this.todaySales,
@@ -137,6 +141,7 @@ class _MetricsGrid extends StatelessWidget {
   final int lowStockCount;
   final bool loading;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(builder: (_, c) {
@@ -188,6 +193,7 @@ class _MetricsGrid extends StatelessWidget {
   }
 }
 
+// clase _MetricCard
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.label,
@@ -203,6 +209,7 @@ class _MetricCard extends StatelessWidget {
   final Color iconBg;
   final Color iconColor;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return TextureCard(

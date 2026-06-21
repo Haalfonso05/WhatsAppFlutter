@@ -1,3 +1,4 @@
+// Tema visual de la app
 import 'package:flutter/material.dart';
 
 const kPrimary = Color(0xFF4F46E5);

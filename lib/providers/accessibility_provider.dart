@@ -1,6 +1,8 @@
+// Provider de accesibilidad (contraste y texto)
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/storage_service.dart';
 
+// clase AccessibilityState
 class AccessibilityState {
   final bool highContrast;
   final double textScale;
@@ -12,6 +14,7 @@ class AccessibilityState {
     this.panelOpen = false,
   });
 
+  // devuelve una copia con campos cambiados
   AccessibilityState copyWith({bool? highContrast, double? textScale, bool? panelOpen}) =>
       AccessibilityState(
         highContrast: highContrast ?? this.highContrast,
@@ -26,7 +29,9 @@ const _min = 1.0;
 const _max = 1.5;
 const _step = 0.1;
 
+// clase AccessibilityNotifier
 class AccessibilityNotifier extends Notifier<AccessibilityState> {
+  // construye la interfaz del widget
   @override
   AccessibilityState build() {
     final s = ref.read(storageServiceProvider);
@@ -38,18 +43,21 @@ class AccessibilityNotifier extends Notifier<AccessibilityState> {
 
   StorageService get _s => ref.read(storageServiceProvider);
 
+  // activa o desactiva el alto contraste
   void toggleContrast() {
     final v = !state.highContrast;
     state = state.copyWith(highContrast: v);
     _s.setBoolPref(_kContrast, v);
   }
 
+  // aumenta el tamano del texto
   void incFont() {
     final v = ((state.textScale + _step).clamp(_min, _max) * 10).round() / 10;
     state = state.copyWith(textScale: v);
     _s.setDoublePref(_kScale, v);
   }
 
+  // reduce el tamano del texto
   void decFont() {
     final v = ((state.textScale - _step).clamp(_min, _max) * 10).round() / 10;
     state = state.copyWith(textScale: v);
@@ -58,6 +66,7 @@ class AccessibilityNotifier extends Notifier<AccessibilityState> {
 
   void togglePanel() => state = state.copyWith(panelOpen: !state.panelOpen);
 
+  // restablece las opciones por defecto
   void reset() {
     state = state.copyWith(highContrast: false, textScale: 1.0);
     _s.setBoolPref(_kContrast, false);

@@ -1,5 +1,7 @@
+// Modelo de pedido
 const orderStatuses = ['En espera', 'Enviado', 'Listo'];
 
+// clase Order
 class Order {
   final String id;
   final String clientName;
@@ -23,6 +25,7 @@ class Order {
     required this.createdAt,
   });
 
+  // devuelve una copia con campos cambiados
   Order copyWith({String? status}) => Order(
     id: id,
     clientName: clientName,
@@ -35,6 +38,7 @@ class Order {
     createdAt: createdAt,
   );
 
+  // funcion _mapStatus
   static String _mapStatus(String? s) {
     switch (s) {
       case 'E': return 'Enviado';
@@ -55,6 +59,7 @@ class Order {
     createdAt: (j['application_date'] ?? j['createdAt'] ?? '') as String,
   );
 
+  // convierte el objeto a JSON
   Map<String, dynamic> toJson() => {
     'customer_document': customerDocument,
     'application_date': createdAt,

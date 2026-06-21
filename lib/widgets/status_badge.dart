@@ -1,5 +1,7 @@
+// Etiqueta de estado
 import 'package:flutter/material.dart';
 
+// clase StatusBadge
 class StatusBadge extends StatelessWidget {
   const StatusBadge(this.label, {super.key});
   final String label;
@@ -12,6 +14,7 @@ class StatusBadge extends StatelessWidget {
     'OK':        (bg: Color(0xFFD1FAE5), fg: Color(0xFF065F46), border: Color(0xFFA7F3D0)),
   };
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final style = _styles[label] ?? (

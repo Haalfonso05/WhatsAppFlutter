@@ -1,6 +1,8 @@
+// Provider de estadisticas de ventas
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../services/api_service.dart';
 
+// clase SalesStats
 class SalesStats {
   final double todaySales;
   final double monthSales;
@@ -13,13 +15,16 @@ class SalesStats {
   });
 }
 
+// clase SalesStatsNotifier
 class SalesStatsNotifier extends Notifier<SalesStats> {
+  // construye la interfaz del widget
   @override
   SalesStats build() {
     Future.microtask(_load);
     return const SalesStats(loading: true);
   }
 
+  // funcion _load
   Future<void> _load() async {
     try {
       
@@ -53,6 +58,7 @@ class SalesStatsNotifier extends Notifier<SalesStats> {
     }
   }
 
+  // funcion reload
   Future<void> reload() async {
     state = const SalesStats(loading: true);
     await _load();

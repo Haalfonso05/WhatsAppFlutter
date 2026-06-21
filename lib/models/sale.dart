@@ -1,3 +1,5 @@
+// Modelo de venta
+// clase Sale
 class Sale {
   final String id;
   final double amount;

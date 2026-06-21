@@ -1,3 +1,4 @@
+// Rutas de la app (go_router)
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -10,6 +11,7 @@ import '../screens/orders_screen.dart';
 import '../screens/clients_screen.dart';
 import '../widgets/app_shell.dart';
 
+// clase _AuthListenable
 class _AuthListenable extends ChangeNotifier {
   _AuthListenable(Ref ref) {
     ref.listen<Object?>(authProvider, (prev, next) => notifyListeners());

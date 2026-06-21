@@ -1,9 +1,11 @@
+// Provider de clientes (paginacion)
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/client.dart';
 import '../services/api_service.dart';
 
 // ── Paged state ──────────────────────────────────────────────────────────────
 
+// clase ClientsPagedState
 class ClientsPagedState {
   final List<Client> items;
   final int page;
@@ -21,6 +23,7 @@ class ClientsPagedState {
     this.search = '',
   });
 
+  // devuelve una copia con campos cambiados
   ClientsPagedState copyWith({
     List<Client>? items,
     int? page,
@@ -39,13 +42,16 @@ class ClientsPagedState {
       );
 }
 
+// clase ClientsPagedNotifier
 class ClientsPagedNotifier extends Notifier<ClientsPagedState> {
+  // construye la interfaz del widget
   @override
   ClientsPagedState build() {
     Future.microtask(_fetch);
     return const ClientsPagedState(loading: true);
   }
 
+  // funcion _fetch
   Future<void> _fetch() async {
     try {
       final result = await ApiService.getClientsPaged(
@@ -64,16 +70,19 @@ class ClientsPagedNotifier extends Notifier<ClientsPagedState> {
     }
   }
 
+  // funcion setSearch
   void setSearch(String search) {
     state = state.copyWith(search: search, page: 1, loading: true);
     _fetch();
   }
 
+  // funcion setPage
   void setPage(int page) {
     state = state.copyWith(page: page, loading: true);
     _fetch();
   }
 
+  // funcion reload
   Future<void> reload() async {
     state = state.copyWith(loading: true);
     await _fetch();
@@ -84,13 +93,16 @@ final clientsPagedProvider =
     NotifierProvider<ClientsPagedNotifier, ClientsPagedState>(
         ClientsPagedNotifier.new);
 
+// clase ClientsNotifier
 class ClientsNotifier extends Notifier<List<Client>> {
+  // construye la interfaz del widget
   @override
   List<Client> build() {
     _load();
     return [];
   }
 
+  // funcion _load
   Future<void> _load() async {
     try {
       final clients = await ApiService.getClients();
@@ -98,6 +110,7 @@ class ClientsNotifier extends Notifier<List<Client>> {
     } catch (_) {}
   }
 
+  // funcion add
   Future<Client> add({
     required String id,
     required String name1,
@@ -122,11 +135,13 @@ class ClientsNotifier extends Notifier<List<Client>> {
     return created;
   }
 
+  // funcion update
   Future<void> update(Client client) async {
     final updated = await ApiService.updateClient(client);
     state = state.map((c) => c.id == updated.id ? updated : c).toList();
   }
 
+  // funcion remove
   Future<void> remove(String id) async {
     await ApiService.deleteClient(id);
     state = state.where((c) => c.id != id).toList();

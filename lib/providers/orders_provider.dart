@@ -1,3 +1,4 @@
+// Provider de pedidos (paginacion y estado)
 import 'dart:convert';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:http/http.dart' as http;
@@ -5,8 +6,7 @@ import '../models/order.dart';
 import '../services/api_service.dart';
 import 'inventory_provider.dart';
 
-// ── Paged state ───────────────────────────────────────────────────────────────
-
+// estado de la lista paginada de pedidos
 class OrdersPagedState {
   final List<Order> items;
   final int page;
@@ -26,6 +26,7 @@ class OrdersPagedState {
     this.status = '',
   });
 
+  // devuelve una copia con campos cambiados
   OrdersPagedState copyWith({
     List<Order>? items,
     int? page,
@@ -46,13 +47,16 @@ class OrdersPagedState {
       );
 }
 
+// notifier de la lista paginada de pedidos
 class OrdersPagedNotifier extends Notifier<OrdersPagedState> {
+  // estado inicial y primera carga
   @override
   OrdersPagedState build() {
     Future.microtask(_fetch);
     return const OrdersPagedState(loading: true);
   }
 
+  // trae los pedidos de la pagina actual desde el backend
   Future<void> _fetch() async {
     try {
       final result = await ApiService.getOrdersPaged(
@@ -72,16 +76,19 @@ class OrdersPagedNotifier extends Notifier<OrdersPagedState> {
     }
   }
 
+  // cambia el filtro de estado y recarga
   void setStatus(String status) {
     state = state.copyWith(status: status, page: 1, loading: true);
     _fetch();
   }
 
+  // cambia de pagina y recarga
   void setPage(int page) {
     state = state.copyWith(page: page, loading: true);
     _fetch();
   }
 
+  // recarga la pagina actual
   Future<void> reload() async {
     state = state.copyWith(loading: true);
     await _fetch();
@@ -92,16 +99,16 @@ final ordersPagedProvider =
     NotifierProvider<OrdersPagedNotifier, OrdersPagedState>(
         OrdersPagedNotifier.new);
 
-// ── Mutations notifier (add / updateStatus / remove) ─────────────────────────
-
+// notifier de mutaciones (crear, cambiar estado, eliminar)
 class OrdersNotifier extends Notifier<List<Order>> {
   @override
   List<Order> build() => [];
 
+  // crea un pedido con sus productos
   Future<void> add({
     required String clientName,
     required String customerDocument,
-    required List<Map<String, dynamic>> lines, // [{productId, productName, quantity, price}]
+    required List<Map<String, dynamic>> lines,
     required String notes,
   }) async {
     final today = DateTime.now().toIso8601String().substring(0, 10);
@@ -134,6 +141,7 @@ class OrdersNotifier extends Notifier<List<Order>> {
     state = [...state, created];
   }
 
+  // cambia el estado del pedido y descuenta stock si queda Listo
   Future<void> updateStatus(String id, String status) async {
     await ApiService.updateOrderStatus(id, status);
     state = state.map((o) => o.id == id ? o.copyWith(status: status) : o).toList();
@@ -142,6 +150,7 @@ class OrdersNotifier extends Notifier<List<Order>> {
     }
   }
 
+  // descuenta el stock de los productos de un pedido
   Future<void> _decrementStockForOrder(String orderId) async {
     try {
       final response = await http.get(
@@ -158,10 +167,10 @@ class OrdersNotifier extends Notifier<List<Order>> {
     } catch (_) {}
   }
 
+  // quita un pedido de la lista local
   void remove(String id) {
     state = state.where((o) => o.id != id).toList();
   }
-
 }
 
 final ordersProvider =

@@ -1,5 +1,7 @@
+// Campo de texto reutilizable
 import 'package:flutter/material.dart';
 
+// clase DarkTextField
 class DarkTextField extends StatelessWidget {
   const DarkTextField({
     super.key,
@@ -20,6 +22,7 @@ class DarkTextField extends StatelessWidget {
   final String? Function(String?)? validator;
   final Widget? suffix;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Column(

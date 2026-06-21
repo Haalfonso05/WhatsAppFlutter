@@ -1,3 +1,5 @@
+// Modelo de usuario
+// clase AppUser
 class AppUser {
   final String id;
   final String name;
@@ -18,6 +20,7 @@ class AppUser {
     password: j['password'] as String,
   );
 
+  // convierte el objeto a JSON
   Map<String, dynamic> toJson() => {
     'id': id,
     'name': name,
@@ -26,6 +29,7 @@ class AppUser {
   };
 }
 
+// clase UserSession
 class UserSession {
   final String id;
   final String name;

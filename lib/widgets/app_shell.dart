@@ -1,3 +1,4 @@
+// Estructura base con navegacion
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -16,16 +17,19 @@ const _navItems = [
   (icon: Icons.people_outlined, activeIcon: Icons.people, label: 'Clientes', path: '/clients'),
 ];
 
+// clase AppShell
 class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
   final Widget child;
 
+  // funcion _selectedIndex
   int _selectedIndex(BuildContext context) {
     final loc = GoRouterState.of(context).matchedLocation;
     final idx = _navItems.indexWhere((e) => loc.startsWith(e.path));
     return idx < 0 ? 0 : idx;
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final width = MediaQuery.sizeOf(context).width;
@@ -95,6 +99,7 @@ class AppShell extends ConsumerWidget {
   }
 }
 
+// clase _DarkSidebar
 class _DarkSidebar extends StatelessWidget {
   const _DarkSidebar({
     required this.selectedIndex,
@@ -110,6 +115,7 @@ class _DarkSidebar extends StatelessWidget {
   final VoidCallback onLogout;
   final void Function(int) onSelect;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -128,6 +134,7 @@ class _DarkSidebar extends StatelessWidget {
   }
 }
 
+// clase _DarkSidebarContent
 class _DarkSidebarContent extends StatelessWidget {
   const _DarkSidebarContent({
     required this.selectedIndex,
@@ -143,6 +150,7 @@ class _DarkSidebarContent extends StatelessWidget {
   final VoidCallback onLogout;
   final void Function(int) onSelect;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Column(
@@ -260,6 +268,7 @@ class _DarkSidebarContent extends StatelessWidget {
   }
 }
 
+// clase _NavItem
 class _NavItem extends StatefulWidget {
   const _NavItem({
     required this.icon,
@@ -279,9 +288,11 @@ class _NavItem extends StatefulWidget {
   State<_NavItem> createState() => _NavItemState();
 }
 
+// clase _NavItemState
 class _NavItemState extends State<_NavItem> {
   bool _hovered = false;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     Color bg = Colors.transparent;

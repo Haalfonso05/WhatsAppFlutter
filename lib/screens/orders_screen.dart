@@ -1,3 +1,4 @@
+// Pantalla de pedidos
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -16,6 +17,7 @@ import '../widgets/gradient_text.dart';
 import '../widgets/texture_card.dart';
 import '../widgets/status_badge.dart';
 
+// clase OrdersScreen
 class OrdersScreen extends ConsumerStatefulWidget {
   const OrdersScreen({super.key});
 
@@ -23,13 +25,16 @@ class OrdersScreen extends ConsumerStatefulWidget {
   ConsumerState<OrdersScreen> createState() => _OrdersScreenState();
 }
 
+// clase _OrdersScreenState
 class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   String _filter = 'Todos';
 
+  // funcion _openForm
   void _openForm() {
     showDialog(context: context, builder: (_) => const _OrderDialog());
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final paged = ref.watch(ordersPagedProvider);
@@ -138,12 +143,14 @@ class _OrdersScreenState extends ConsumerState<OrdersScreen> {
   }
 }
 
+// clase _FilterPill
 class _FilterPill extends StatelessWidget {
   const _FilterPill({required this.label, required this.selected, required this.onTap});
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -169,6 +176,7 @@ class _FilterPill extends StatelessWidget {
   }
 }
 
+// clase _OrdersPaginationBar
 class _OrdersPaginationBar extends StatelessWidget {
   const _OrdersPaginationBar({
     required this.page,
@@ -181,6 +189,7 @@ class _OrdersPaginationBar extends StatelessWidget {
   final bool loading;
   final void Function(int) onPage;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final List<int> pages = [];
@@ -238,11 +247,13 @@ class _OrdersPaginationBar extends StatelessWidget {
   }
 }
 
+// clase _OrderGrid
 class _OrderGrid extends StatelessWidget {
   const _OrderGrid({required this.orders, required this.columns});
   final List<Order> orders;
   final int columns;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final rows = <Widget>[];
@@ -268,10 +279,12 @@ class _OrderGrid extends StatelessWidget {
   }
 }
 
+// clase _OrderCard
 class _OrderCard extends ConsumerWidget {
   const _OrderCard({required this.order});
   final Order order;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return GestureDetector(
@@ -339,6 +352,7 @@ class _OrderCard extends ConsumerWidget {
 
 final Map<String, Map<int, bool>> _checkedByOrder = {};
 
+// clase _OrderDetailDialog
 class _OrderDetailDialog extends ConsumerStatefulWidget {
   const _OrderDetailDialog({required this.order});
   final Order order;
@@ -347,11 +361,13 @@ class _OrderDetailDialog extends ConsumerStatefulWidget {
   ConsumerState<_OrderDetailDialog> createState() => _OrderDetailDialogState();
 }
 
+// clase _OrderDetailDialogState
 class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
   List<Map<String, dynamic>> _details = [];
   bool _loading = true;
   late Map<int, bool> _checked;
 
+  // inicializa el estado del widget
   @override
   void initState() {
     super.initState();
@@ -359,6 +375,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
     _loadDetails();
   }
 
+  // funcion _loadDetails
   Future<void> _loadDetails() async {
     try {
       final response = await http.get(
@@ -376,6 +393,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final inventory = ref.watch(inventoryProvider);
@@ -588,6 +606,7 @@ class _OrderDetailDialogState extends ConsumerState<_OrderDetailDialog> {
   }
 }
 
+// clase _OrderStepper
 class _OrderStepper extends StatelessWidget {
   const _OrderStepper({required this.status, required this.onAdvance});
   final String status;
@@ -596,6 +615,7 @@ class _OrderStepper extends StatelessWidget {
   static const _steps = ['En espera', 'Enviado', 'Listo'];
   static const _colors = [Color(0xFFF59E0B), Color(0xFF6366F1), Color(0xFF22C55E)];
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final cur = _steps.indexOf(status);
@@ -664,12 +684,14 @@ class _OrderStepper extends StatelessWidget {
   }
 }
 
+// clase _Row
 class _Row extends StatelessWidget {
   const _Row({required this.label, required this.value, this.bold = false});
   final String label;
   final String value;
   final bool bold;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -691,6 +713,7 @@ class _Row extends StatelessWidget {
   }
 }
 
+// clase _IconDelBtn
 class _IconDelBtn extends StatefulWidget {
   const _IconDelBtn({required this.onTap});
   final VoidCallback onTap;
@@ -699,9 +722,11 @@ class _IconDelBtn extends StatefulWidget {
   State<_IconDelBtn> createState() => _IconDelBtnState();
 }
 
+// clase _IconDelBtnState
 class _IconDelBtnState extends State<_IconDelBtn> {
   bool _hovered = false;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -724,12 +749,14 @@ class _IconDelBtnState extends State<_IconDelBtn> {
   }
 }
 
+// clase _ProductLine
 class _ProductLine {
   InventoryItem? item;
   int quantity = 1;
   _ProductLine();
 }
 
+// clase _OrderDialog
 class _OrderDialog extends ConsumerStatefulWidget {
   const _OrderDialog();
 
@@ -737,18 +764,21 @@ class _OrderDialog extends ConsumerStatefulWidget {
   ConsumerState<_OrderDialog> createState() => _OrderDialogState();
 }
 
+// clase _OrderDialogState
 class _OrderDialogState extends ConsumerState<_OrderDialog> {
   final _notesCtrl = TextEditingController();
   Client? _selectedClient;
   final List<_ProductLine> _lines = [_ProductLine()];
   bool _saving = false;
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _notesCtrl.dispose();
     super.dispose();
   }
 
+  // funcion _calcTotal
   double _calcTotal() {
     return _lines.fold(0, (sum, l) {
       if (l.item == null) return sum;
@@ -756,6 +786,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
     });
   }
 
+  // funcion _stockError
   String? _stockError() {
     for (final line in _lines) {
       if (line.item == null) continue;
@@ -767,6 +798,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
     return null;
   }
 
+  // funcion _submit
   Future<void> _submit() async {
     if (_selectedClient == null) return;
     if (_lines.any((l) => l.item == null)) return;
@@ -798,6 +830,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final total = _calcTotal();
@@ -985,6 +1018,7 @@ class _OrderDialogState extends ConsumerState<_OrderDialog> {
 
 // ── Widget de búsqueda con sugerencias ────────────────────────────────────────
 
+// clase _SearchPicker
 class _SearchPicker<T> extends StatefulWidget {
   const _SearchPicker({
     required this.label,
@@ -1010,6 +1044,7 @@ class _SearchPicker<T> extends StatefulWidget {
   State<_SearchPicker<T>> createState() => _SearchPickerState<T>();
 }
 
+// clase _SearchPickerState
 class _SearchPickerState<T> extends State<_SearchPicker<T>> {
   final _ctrl = TextEditingController();
   final _focus = FocusNode();
@@ -1017,6 +1052,7 @@ class _SearchPickerState<T> extends State<_SearchPicker<T>> {
   bool _loading = false;
   bool _open = false;
 
+  // inicializa el estado del widget
   @override
   void initState() {
     super.initState();
@@ -1029,6 +1065,7 @@ class _SearchPickerState<T> extends State<_SearchPicker<T>> {
     });
   }
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _ctrl.dispose();
@@ -1036,6 +1073,7 @@ class _SearchPickerState<T> extends State<_SearchPicker<T>> {
     super.dispose();
   }
 
+  // funcion _search
   Future<void> _search(String q) async {
     if (q.trim().length < 2) {
       setState(() { _results = []; _open = false; });
@@ -1050,6 +1088,7 @@ class _SearchPickerState<T> extends State<_SearchPicker<T>> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     // If something is selected, show chip
@@ -1140,11 +1179,13 @@ class _SearchPickerState<T> extends State<_SearchPicker<T>> {
   }
 }
 
+// clase _SmallBtn
 class _SmallBtn extends StatelessWidget {
   const _SmallBtn({required this.icon, this.onTap});
   final IconData icon;
   final VoidCallback? onTap;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final enabled = onTap != null;

@@ -1,3 +1,4 @@
+// Funciones utilitarias
 import 'package:intl/intl.dart';
 
 final _currency = NumberFormat.currency(locale: 'es_CO', symbol: r'$', decimalDigits: 0);
@@ -5,6 +6,7 @@ final _date = DateFormat('dd/MM/yyyy');
 
 String formatCurrency(double amount) => _currency.format(amount);
 
+// funcion formatDate
 String formatDate(String isoDate) {
   try {
     return _date.format(DateTime.parse(isoDate).toLocal());

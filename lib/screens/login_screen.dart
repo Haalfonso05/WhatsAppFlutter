@@ -1,8 +1,10 @@
+// Pantalla de inicio de sesion
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../providers/auth_provider.dart';
 
+// clase LoginScreen
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
@@ -10,6 +12,7 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
+// clase _LoginScreenState
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   // Paleta
   static const _bg = Color(0xFFF4F4F5); 
@@ -27,6 +30,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   String? _error;
   bool _obscure = true;
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -34,6 +38,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  // funcion _submit
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     setState(() {
@@ -54,6 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -264,6 +270,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 }
 
+// clase _LightField
 class _LightField extends StatelessWidget {
   const _LightField({
     required this.controller,
@@ -290,6 +297,7 @@ class _LightField extends StatelessWidget {
   static const _accent = Color(0xFF10B981);
   static const _muted = Color(0xFF94A3B8);
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Column(

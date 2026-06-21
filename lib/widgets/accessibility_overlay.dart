@@ -1,7 +1,9 @@
+// Boton flotante y panel de accesibilidad
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/accessibility_provider.dart';
 
+// clase del overlay de accesibilidad
 class AccessibilityOverlay extends ConsumerWidget {
   const AccessibilityOverlay({super.key});
 
@@ -10,6 +12,7 @@ class AccessibilityOverlay extends ConsumerWidget {
   static const _border = Color(0xFFE2E8F0);
   static const _muted = Color(0xFF64748B);
 
+  // construye el overlay (panel + boton)
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final a = ref.watch(accessibilityProvider);
@@ -28,6 +31,7 @@ class AccessibilityOverlay extends ConsumerWidget {
     );
   }
 
+  // boton flotante que abre o cierra el panel
   Widget _fab(AccessibilityState a, AccessibilityNotifier n) {
     return GestureDetector(
       onTap: n.togglePanel,
@@ -48,6 +52,7 @@ class AccessibilityOverlay extends ConsumerWidget {
     );
   }
 
+  // panel con las opciones de accesibilidad
   Widget _panel(AccessibilityState a, AccessibilityNotifier n) {
     return Container(
       width: 250,
@@ -125,6 +130,7 @@ class AccessibilityOverlay extends ConsumerWidget {
     );
   }
 
+  // boton para subir o bajar el tamano de texto
   Widget _stepButton(String label, VoidCallback? onTap) {
     final enabled = onTap != null;
     return GestureDetector(

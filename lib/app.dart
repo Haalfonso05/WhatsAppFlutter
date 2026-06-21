@@ -1,3 +1,4 @@
+// Configuracion de MaterialApp, accesibilidad global
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/theme.dart';
@@ -5,6 +6,7 @@ import 'router/app_router.dart';
 import 'providers/accessibility_provider.dart';
 import 'widgets/accessibility_overlay.dart';
 
+// clase App
 class App extends ConsumerWidget {
   const App({super.key});
 
@@ -15,6 +17,7 @@ class App extends ConsumerWidget {
     0, 0, 0, 1, 0,
   ]);
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);

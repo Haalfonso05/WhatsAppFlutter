@@ -1,3 +1,4 @@
+// Pantalla de inventario
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../core/theme.dart';
@@ -9,6 +10,7 @@ import '../widgets/gradient_text.dart';
 import '../widgets/texture_card.dart';
 import '../widgets/status_badge.dart';
 
+// clase InventoryScreen
 class InventoryScreen extends ConsumerStatefulWidget {
   const InventoryScreen({super.key});
 
@@ -16,19 +18,23 @@ class InventoryScreen extends ConsumerStatefulWidget {
   ConsumerState<InventoryScreen> createState() => _InventoryScreenState();
 }
 
+// clase _InventoryScreenState
 class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   final _searchCtrl = TextEditingController();
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _searchCtrl.dispose();
     super.dispose();
   }
 
+  // funcion _openForm
   void _openForm() {
     showDialog(context: context, builder: (_) => const _InventoryDialog());
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final paged = ref.watch(inventoryPagedProvider);
@@ -132,11 +138,13 @@ class _InventoryScreenState extends ConsumerState<InventoryScreen> {
   }
 }
 
+// clase _InventoryTable
 class _InventoryTable extends ConsumerWidget {
   const _InventoryTable({required this.items, required this.onDelete});
   final List<InventoryItem> items;
   final void Function(String) onDelete;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return Column(
@@ -174,6 +182,7 @@ class _InventoryTable extends ConsumerWidget {
   }
 }
 
+// clase _TableRow
 class _TableRow extends ConsumerStatefulWidget {
   const _TableRow({required this.item, required this.onDelete});
   final InventoryItem item;
@@ -183,18 +192,21 @@ class _TableRow extends ConsumerStatefulWidget {
   ConsumerState<_TableRow> createState() => _TableRowState();
 }
 
+// clase _TableRowState
 class _TableRowState extends ConsumerState<_TableRow> {
   bool _editing = false;
   late final _nameCtrl  = TextEditingController(text: widget.item.name);
   late final _stockCtrl = TextEditingController(text: widget.item.stock.toString());
   late final _priceCtrl = TextEditingController(text: widget.item.price.toStringAsFixed(0));
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _nameCtrl.dispose(); _stockCtrl.dispose(); _priceCtrl.dispose();
     super.dispose();
   }
 
+  // funcion _save
   Future<void> _save() async {
     final stock = int.tryParse(_stockCtrl.text);
     final price = double.tryParse(_priceCtrl.text);
@@ -211,6 +223,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
     setState(() => _editing = false);
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -219,11 +232,13 @@ class _TableRowState extends ConsumerState<_TableRow> {
     );
   }
 
+  // funcion _adjustStock
   Future<void> _adjustStock(int delta) async {
     await ApiService.adjustProductStock(widget.item.id, delta);
     ref.read(inventoryPagedProvider.notifier).reload();
   }
 
+  // funcion _viewRow
   Widget _viewRow() {
     return Row(
       children: [
@@ -279,6 +294,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
     );
   }
 
+  // funcion _editRow
   Widget _editRow() {
     const inputDec = InputDecoration(
       isDense: true,
@@ -341,6 +357,7 @@ class _TableRowState extends ConsumerState<_TableRow> {
   }
 }
 
+// clase _IconBtn
 class _IconBtn extends StatefulWidget {
   const _IconBtn({required this.icon, required this.color, required this.onTap});
   final IconData icon;
@@ -351,9 +368,11 @@ class _IconBtn extends StatefulWidget {
   State<_IconBtn> createState() => _IconBtnState();
 }
 
+// clase _IconBtnState
 class _IconBtnState extends State<_IconBtn> {
   bool _hovered = false;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return MouseRegion(
@@ -376,11 +395,13 @@ class _IconBtnState extends State<_IconBtn> {
   }
 }
 
+// clase _StockBtn
 class _StockBtn extends StatelessWidget {
   const _StockBtn({required this.icon, required this.onTap});
   final IconData icon;
   final VoidCallback onTap;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
@@ -400,6 +421,7 @@ class _StockBtn extends StatelessWidget {
 
 // ── Pagination bar ────────────────────────────────────────────────────────────
 
+// clase _InventoryPaginationBar
 class _InventoryPaginationBar extends StatelessWidget {
   const _InventoryPaginationBar({
     required this.page,
@@ -412,6 +434,7 @@ class _InventoryPaginationBar extends StatelessWidget {
   final bool loading;
   final void Function(int) onPage;
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     final List<int> pages = [];
@@ -489,6 +512,7 @@ class _InventoryPaginationBar extends StatelessWidget {
   }
 }
 
+// clase _InventoryDialog
 class _InventoryDialog extends ConsumerStatefulWidget {
   const _InventoryDialog();
 
@@ -496,6 +520,7 @@ class _InventoryDialog extends ConsumerStatefulWidget {
   ConsumerState<_InventoryDialog> createState() => _InventoryDialogState();
 }
 
+// clase _InventoryDialogState
 class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
   final _formKey   = GlobalKey<FormState>();
   final _nameCtrl  = TextEditingController();
@@ -505,12 +530,14 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
   String? _selectedType;
   List<Map<String, String>> _types = [];
 
+  // inicializa el estado del widget
   @override
   void initState() {
     super.initState();
     ApiService.getProductTypes().then((t) => setState(() => _types = t));
   }
 
+  // libera los controladores al cerrar
   @override
   void dispose() {
     _nameCtrl.dispose(); _stockCtrl.dispose();
@@ -518,6 +545,7 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
     super.dispose();
   }
 
+  // funcion _submit
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedType == null) return;
@@ -529,6 +557,7 @@ class _InventoryDialogState extends ConsumerState<_InventoryDialog> {
     if (context.mounted) Navigator.pop(context);
   }
 
+  // construye la interfaz del widget
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
