@@ -46,3 +46,8 @@ app.*.map.json
 
 # Claude
 .claude/
+
+# Archivos locales y de entorno
+.env
+.DS_Store
+*.log
